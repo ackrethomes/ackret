@@ -1,50 +1,152 @@
-export default function Home() {
+export default function Page() {
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,#0a0a0a_0%,#111111_45%,#171717_100%)] text-[#f5f1e8]">
-      <section className="mx-auto flex min-h-screen max-w-6xl items-center justify-center px-6 py-16">
-        <div className="w-full max-w-3xl text-center">
-          <p className="mb-6 text-xs font-medium uppercase tracking-[0.35em] text-[#c9b27d]">
-            Ackret
-          </p>
+    <main
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "linear-gradient(180deg,#0b0b0c 0%,#121213 100%)",
+        color: "#f5f1e8",
+        fontFamily: "Georgia, 'Times New Roman', serif",
+        padding: "40px"
+      }}
+    >
+      <div
+        style={{
+          maxWidth: "800px",
+          textAlign: "center"
+        }}
+      >
+        {/* Brand */}
+        <p
+          style={{
+            letterSpacing: "0.35em",
+            fontSize: "12px",
+            textTransform: "uppercase",
+            color: "#c9b27d",
+            marginBottom: "24px"
+          }}
+        >
+          Ackret
+        </p>
 
-          <h1 className="text-5xl font-semibold tracking-tight sm:text-7xl">
-            Direct home transactions,
-            <span className="block text-[#c9b27d]">reimagined.</span>
-          </h1>
+        {/* Headline */}
+        <h1
+          style={{
+            fontSize: "64px",
+            lineHeight: "1.1",
+            marginBottom: "24px",
+            fontWeight: 500
+          }}
+        >
+          Direct home transactions,
+          <span style={{ color: "#c9b27d", display: "block" }}>
+            reimagined.
+          </span>
+        </h1>
 
-          <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-[#d6d0c4] sm:text-lg">
-            A modern platform built to help buyers and sellers navigate home
-            transactions with more clarity, more control, and less friction.
-          </p>
+        {/* Description */}
+        <p
+          style={{
+            fontSize: "18px",
+            lineHeight: "1.7",
+            color: "#d2cbbd",
+            maxWidth: "620px",
+            margin: "0 auto"
+          }}
+        >
+          Ackret is building a modern platform that gives buyers and sellers
+          more control over the home transaction process — simplifying
+          negotiations, reducing costs, and making direct property transactions
+          easier than ever before.
+        </p>
 
-          <div className="mt-10 inline-flex rounded-full border border-[#c9b27d]/30 bg-white/5 px-5 py-2 text-sm tracking-[0.2em] uppercase text-[#efe7d6]">
-            Coming Soon
+        {/* Coming soon badge */}
+        <div
+          style={{
+            marginTop: "48px",
+            display: "inline-block",
+            padding: "12px 28px",
+            border: "1px solid #c9b27d",
+            letterSpacing: "0.2em",
+            fontSize: "12px",
+            textTransform: "uppercase"
+          }}
+        >
+          Coming Soon
+        </div>
+
+        {/* Feature row */}
+        <div
+          style={{
+            marginTop: "80px",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            gap: "28px"
+          }}
+        >
+          <div
+            style={{
+              border: "1px solid rgba(255,255,255,0.08)",
+              padding: "24px"
+            }}
+          >
+            <p
+              style={{
+                fontSize: "12px",
+                letterSpacing: "0.25em",
+                color: "#c9b27d",
+                textTransform: "uppercase",
+                marginBottom: "10px"
+              }}
+            >
+              Built For
+            </p>
+            <p>Independent sellers</p>
           </div>
 
-          <div className="mt-16 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
-              <p className="text-sm uppercase tracking-[0.22em] text-[#c9b27d]">
-                Built For
-              </p>
-              <p className="mt-3 text-lg text-[#f5f1e8]">Independent sellers</p>
-            </div>
+          <div
+            style={{
+              border: "1px solid rgba(255,255,255,0.08)",
+              padding: "24px"
+            }}
+          >
+            <p
+              style={{
+                fontSize: "12px",
+                letterSpacing: "0.25em",
+                color: "#c9b27d",
+                textTransform: "uppercase",
+                marginBottom: "10px"
+              }}
+            >
+              Designed For
+            </p>
+            <p>Confident buyers</p>
+          </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
-              <p className="text-sm uppercase tracking-[0.22em] text-[#c9b27d]">
-                Designed For
-              </p>
-              <p className="mt-3 text-lg text-[#f5f1e8]">Confident buyers</p>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
-              <p className="text-sm uppercase tracking-[0.22em] text-[#c9b27d]">
-                Focused On
-              </p>
-              <p className="mt-3 text-lg text-[#f5f1e8]">Simpler transactions</p>
-            </div>
+          <div
+            style={{
+              border: "1px solid rgba(255,255,255,0.08)",
+              padding: "24px"
+            }}
+          >
+            <p
+              style={{
+                fontSize: "12px",
+                letterSpacing: "0.25em",
+                color: "#c9b27d",
+                textTransform: "uppercase",
+                marginBottom: "10px"
+              }}
+            >
+              Focused On
+            </p>
+            <p>Simpler transactions</p>
           </div>
         </div>
-      </section>
+      </div>
     </main>
-  );
+  )
 }

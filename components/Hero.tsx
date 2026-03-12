@@ -1,36 +1,25 @@
 import Image from "next/image";
 
-export default function Hero() {
-  return (
-    <section
-      style={{
-        padding: "110px 24px 70px",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "1100px",
-          margin: "0 auto",
-          textAlign: "center",
-        }}
-      >
-        {/* LOGO */}
-
-        <div
-          style={{
-            marginBottom: "40px",
-            display: "flex",
-            justifyContent: "center",
-          }}
-        >
-          <Image
-            src="/logo.png"
-            alt="Ackret"
-            width={420}
-            height={160}
-            priority
-          />
-        </div>
+<div
+  style={{
+    marginBottom: "40px",
+    display: "flex",
+    justifyContent: "center",
+  }}
+>
+  <Image
+    src="/logo.png"
+    alt="Ackret"
+    width={500}
+    height={200}
+    style={{
+      width: "auto",
+      height: "90px",
+      objectFit: "contain",
+    }}
+    priority
+  />
+</div>
 
         {/* TAGLINE */}
 

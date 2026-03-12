@@ -239,19 +239,13 @@ export default function PurchasePage() {
                 gap: "12px",
               }}
             >
-              <button
-                style={primaryButtonStyle}
-                type="button"
-              >
-                Sign In to Purchase
-              </button>
+              <a href="/sign-in" style={{ textDecoration: "none" }}>
+                <div style={primaryButtonStyle}>Sign In to Purchase</div>
+              </a>
 
-              <button
-                style={secondaryButtonStyle}
-                type="button"
-              >
-                Create Account
-              </button>
+              <a href="/create-account" style={{ textDecoration: "none" }}>
+                <div style={secondaryButtonStyle}>Create Account</div>
+              </a>
             </div>
 
             <p
@@ -344,6 +338,8 @@ const primaryButtonStyle: React.CSSProperties = {
   textTransform: "uppercase",
   cursor: "pointer",
   boxShadow: "var(--ackret-shadow)",
+  textAlign: "center",
+  boxSizing: "border-box",
 };
 
 const secondaryButtonStyle: React.CSSProperties = {
@@ -357,4 +353,6 @@ const secondaryButtonStyle: React.CSSProperties = {
   letterSpacing: "0.14em",
   textTransform: "uppercase",
   cursor: "pointer",
+  textAlign: "center",
+  boxSizing: "border-box",
 };

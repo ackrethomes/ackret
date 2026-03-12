@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export default function Hero() {
   return (
     <section
@@ -12,39 +14,45 @@ export default function Hero() {
           textAlign: "center",
         }}
       >
+        {/* LOGO */}
+
         <div
           style={{
-            marginBottom: "24px",
+            marginBottom: "40px",
+            display: "flex",
+            justifyContent: "center",
           }}
         >
-          <div
-            style={{
-              width: "140px",
-              height: "4px",
-              background: "linear-gradient(90deg, var(--ackret-gold), var(--ackret-gold-dark))",
-              margin: "0 auto 24px",
-              borderRadius: "999px",
-            }}
+          <Image
+            src="/logo.png"
+            alt="Ackret"
+            width={420}
+            height={160}
+            priority
           />
-
-          <p
-            style={{
-              margin: 0,
-              fontSize: "12px",
-              letterSpacing: "0.28em",
-              textTransform: "uppercase",
-              color: "var(--ackret-gold-dark)",
-            }}
-          >
-            Direct Home Transactions
-          </p>
         </div>
+
+        {/* TAGLINE */}
+
+        <p
+          style={{
+            margin: 0,
+            fontSize: "12px",
+            letterSpacing: "0.28em",
+            textTransform: "uppercase",
+            color: "var(--ackret-gold-dark)",
+          }}
+        >
+          Direct Home Transactions
+        </p>
+
+        {/* HEADLINE */}
 
         <h1
           style={{
-            margin: "0 auto",
+            margin: "24px auto 0",
             maxWidth: "900px",
-            fontSize: "clamp(3rem, 8vw, 6.5rem)",
+            fontSize: "clamp(3rem, 8vw, 6rem)",
             lineHeight: 0.95,
             letterSpacing: "-0.03em",
             color: "var(--ackret-navy)",
@@ -63,6 +71,8 @@ export default function Hero() {
           </span>
         </h1>
 
+        {/* DESCRIPTION */}
+
         <p
           style={{
             maxWidth: "760px",
@@ -76,6 +86,8 @@ export default function Hero() {
           helping buyers and sellers move through the process with clarity,
           confidence, and less unnecessary cost.
         </p>
+
+        {/* BADGES */}
 
         <div
           style={{

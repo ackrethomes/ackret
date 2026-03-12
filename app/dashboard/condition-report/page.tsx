@@ -63,11 +63,39 @@ export default function ConditionReportPage() {
 
   const [draftId, setDraftId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [openSection, setOpenSection] = useState<string>(
+    groupedSections[0]?.[0] ?? ""
+  );
 
   const yesCount = useMemo(() => {
     return Object.values(answers).filter((item) => item.answer === "yes").length;
   }, [answers]);
 
+  const sectionStats = useMemo(() => {
+    return groupedSections.map(([sectionName, questions]) => {
+      const answered = questions.filter(
+        (q) => answers[q.id] && answers[q.id].answer !== ""
+      ).length;
+
+      const yeses = questions.filter(
+        (q) => answers[q.id] && answers[q.id].answer === "yes"
+      ).length;
+
+      return {
+        sectionName,
+        total: questions.length,
+        answered,
+        yeses,
+        complete: answered === questions.length,
+      };
+    });
+  }, [answers]);
+
+  const answeredCount = useMemo(() => {
+    return Object.values(answers).filter((item) => item.answer !== "").length;
+  }, [answers]);
+
+  const totalQuestionCount = conditionReportQuestions.length;
   const nextStep = dashboardSteps[1];
 
   function updateForm<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -151,7 +179,9 @@ export default function ConditionReportPage() {
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data?.error || "Failed to save draft before PDF generation.");
+          throw new Error(
+            data?.error || "Failed to save draft before PDF generation."
+          );
         }
 
         activeDraftId = data.id;
@@ -168,7 +198,7 @@ export default function ConditionReportPage() {
   }
 
   return (
-    <div style={{ maxWidth: "1100px" }}>
+    <div style={{ maxWidth: "1180px" }}>
       <p
         style={{
           margin: 0,
@@ -197,26 +227,114 @@ export default function ConditionReportPage() {
       <p
         style={{
           margin: 0,
-          maxWidth: "860px",
+          maxWidth: "900px",
           fontSize: "18px",
           lineHeight: 1.8,
           color: "var(--ackret-muted)",
         }}
       >
-        Complete the property details and answer each disclosure question using
-        Yes, No, or N/A. If you answer Yes, add an explanation so the report is
-        ready for the final downloadable version.
+        Complete the property details first, then work section by section through
+        the Wisconsin disclosure questions. You only need to write explanations
+        for answers marked Yes.
       </p>
 
       <div
         style={{
           marginTop: "28px",
           display: "grid",
-          gridTemplateColumns: "1.2fr 0.8fr",
+          gridTemplateColumns: "0.9fr 1.6fr 0.8fr",
           gap: "24px",
           alignItems: "start",
         }}
       >
+        {/* LEFT NAV */}
+        <div style={{ display: "grid", gap: "20px", position: "sticky", top: 24 }}>
+          <Card>
+            <SectionHeading eyebrow="Sections" title="Jump to a section" />
+
+            <div style={{ display: "grid", gap: "10px" }}>
+              {sectionStats.map((section, index) => {
+                const isOpen = openSection === section.sectionName;
+
+                return (
+                  <button
+                    key={section.sectionName}
+                    type="button"
+                    onClick={() => setOpenSection(section.sectionName)}
+                    style={{
+                      textAlign: "left",
+                      borderRadius: "16px",
+                      padding: "14px",
+                      border: isOpen
+                        ? "1px solid rgba(197,154,74,0.45)"
+                        : "1px solid rgba(22,58,112,0.10)",
+                      background: isOpen ? "#fffaf0" : "#ffffff",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: "10px",
+                        alignItems: "center",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "12px",
+                          letterSpacing: "0.14em",
+                          textTransform: "uppercase",
+                          color: "var(--ackret-gold-dark)",
+                        }}
+                      >
+                        Section {index + 1}
+                      </span>
+
+                      <span
+                        style={{
+                          fontSize: "12px",
+                          color: section.complete
+                            ? "var(--ackret-navy)"
+                            : "var(--ackret-muted)",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {section.answered}/{section.total}
+                      </span>
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: "8px",
+                        fontSize: "15px",
+                        lineHeight: 1.45,
+                        color: "var(--ackret-ink)",
+                        fontWeight: isOpen ? 600 : 500,
+                      }}
+                    >
+                      {section.sectionName}
+                    </div>
+
+                    {section.yeses > 0 ? (
+                      <div
+                        style={{
+                          marginTop: "8px",
+                          fontSize: "13px",
+                          color: "var(--ackret-muted)",
+                        }}
+                      >
+                        {section.yeses} yes response{section.yeses === 1 ? "" : "s"}
+                      </div>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          </Card>
+        </div>
+
+        {/* CENTER CONTENT */}
         <div style={{ display: "grid", gap: "24px" }}>
           <Card>
             <SectionHeading
@@ -345,123 +463,211 @@ export default function ConditionReportPage() {
             </div>
           </Card>
 
-          {groupedSections.map(([sectionName, questions]) => (
-            <Card key={sectionName}>
-              <SectionHeading
-                eyebrow="Disclosure Section"
-                title={sectionName}
-              />
+          {groupedSections.map(([sectionName, questions]) => {
+            const isOpen = openSection === sectionName;
+            const section = sectionStats.find((s) => s.sectionName === sectionName);
 
-              <div style={{ display: "grid", gap: "18px" }}>
-                {questions.map((question) => {
-                  const answerObj = answers[question.id];
+            return (
+              <Card key={sectionName}>
+                <button
+                  type="button"
+                  onClick={() => setOpenSection(sectionName)}
+                  style={{
+                    width: "100%",
+                    background: "transparent",
+                    border: "none",
+                    padding: 0,
+                    textAlign: "left",
+                    cursor: "pointer",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: "16px",
+                      alignItems: "start",
+                    }}
+                  >
+                    <div>
+                      <SectionHeading
+                        eyebrow="Disclosure Section"
+                        title={sectionName}
+                      />
+                    </div>
 
-                  return (
                     <div
-                      key={question.id}
                       style={{
-                        border: "1px solid rgba(22,58,112,0.10)",
-                        borderRadius: "18px",
-                        padding: "18px",
-                        background: "#fbfbf9",
+                        paddingTop: "6px",
+                        textAlign: "right",
+                        minWidth: "90px",
                       }}
                     >
-                      <p
-                        style={{
-                          marginTop: 0,
-                          marginBottom: "12px",
-                          fontSize: "16px",
-                          lineHeight: 1.7,
-                          color: "var(--ackret-ink)",
-                          fontWeight: 500,
-                        }}
-                      >
-                        {question.label}
-                      </p>
-
-                      {question.helpText ? (
-                        <p
-                          style={{
-                            marginTop: 0,
-                            marginBottom: "12px",
-                            fontSize: "14px",
-                            lineHeight: 1.6,
-                            color: "var(--ackret-muted)",
-                          }}
-                        >
-                          {question.helpText}
-                        </p>
-                      ) : null}
-
                       <div
                         style={{
-                          display: "flex",
-                          gap: "10px",
-                          flexWrap: "wrap",
+                          fontSize: "13px",
+                          color: "var(--ackret-muted)",
+                          fontWeight: 600,
                         }}
                       >
-                        {(["yes", "no", "na"] as AnswerValue[]).map((choice) => {
-                          const active = answerObj.answer === choice;
-
-                          return (
-                            <button
-                              key={choice}
-                              type="button"
-                              onClick={() => updateAnswer(question.id, choice)}
-                              style={{
-                                borderRadius: "999px",
-                                padding: "10px 16px",
-                                border: active
-                                  ? "1px solid rgba(197,154,74,0.55)"
-                                  : "1px solid rgba(22,58,112,0.12)",
-                                background: active ? "#fff7e7" : "#ffffff",
-                                color: active
-                                  ? "var(--ackret-gold-dark)"
-                                  : "var(--ackret-navy)",
-                                fontSize: "13px",
-                                letterSpacing: "0.12em",
-                                textTransform: "uppercase",
-                                cursor: "pointer",
-                              }}
-                            >
-                              {choice === "na" ? "N/A" : choice}
-                            </button>
-                          );
-                        })}
+                        {section?.answered}/{section?.total}
                       </div>
+                      <div
+                        style={{
+                          fontSize: "12px",
+                          color: "var(--ackret-gold-dark)",
+                          marginTop: "4px",
+                        }}
+                      >
+                        {isOpen ? "Open" : "Closed"}
+                      </div>
+                    </div>
+                  </div>
+                </button>
 
-                      {answerObj.answer === "yes" ? (
-                        <div style={{ marginTop: "14px" }}>
-                          <label
+                {isOpen ? (
+                  <div style={{ display: "grid", gap: "18px" }}>
+                    {questions.map((question) => {
+                      const answerObj = answers[question.id];
+
+                      return (
+                        <div
+                          key={question.id}
+                          style={{
+                            border: "1px solid rgba(22,58,112,0.10)",
+                            borderRadius: "18px",
+                            padding: "18px",
+                            background: "#fbfbf9",
+                          }}
+                        >
+                          <div
                             style={{
-                              display: "block",
-                              marginBottom: "8px",
-                              fontSize: "12px",
-                              letterSpacing: "0.14em",
-                              textTransform: "uppercase",
-                              color: "var(--ackret-gold-dark)",
+                              display: "flex",
+                              justifyContent: "space-between",
+                              gap: "16px",
+                              alignItems: "start",
                             }}
                           >
-                            Explain this yes response
-                          </label>
+                            <p
+                              style={{
+                                marginTop: 0,
+                                marginBottom: "12px",
+                                fontSize: "16px",
+                                lineHeight: 1.7,
+                                color: "var(--ackret-ink)",
+                                fontWeight: 500,
+                              }}
+                            >
+                              {question.label}
+                            </p>
 
-                          <textarea
-                            value={answerObj.explanation}
-                            onChange={(e) =>
-                              updateExplanation(question.id, e.target.value)
-                            }
-                            placeholder="Describe the issue, what happened, repairs made, dates if known, or any other relevant details."
-                            rows={4}
-                            style={textareaStyle}
-                          />
+                            <span
+                              style={{
+                                whiteSpace: "nowrap",
+                                fontSize: "12px",
+                                color: "var(--ackret-muted)",
+                              }}
+                            >
+                              {question.id.toUpperCase()}
+                            </span>
+                          </div>
+
+                          {question.helpText ? (
+                            <p
+                              style={{
+                                marginTop: 0,
+                                marginBottom: "12px",
+                                fontSize: "14px",
+                                lineHeight: 1.6,
+                                color: "var(--ackret-muted)",
+                              }}
+                            >
+                              {question.helpText}
+                            </p>
+                          ) : null}
+
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "10px",
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            {(["yes", "no", "na"] as AnswerValue[]).map((choice) => {
+                              const active = answerObj.answer === choice;
+
+                              return (
+                                <button
+                                  key={choice}
+                                  type="button"
+                                  onClick={() => updateAnswer(question.id, choice)}
+                                  style={{
+                                    borderRadius: "999px",
+                                    padding: "10px 16px",
+                                    border: active
+                                      ? "1px solid rgba(197,154,74,0.55)"
+                                      : "1px solid rgba(22,58,112,0.12)",
+                                    background: active ? "#fff7e7" : "#ffffff",
+                                    color: active
+                                      ? "var(--ackret-gold-dark)"
+                                      : "var(--ackret-navy)",
+                                    fontSize: "13px",
+                                    letterSpacing: "0.12em",
+                                    textTransform: "uppercase",
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  {choice === "na" ? "N/A" : choice}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {answerObj.answer === "yes" ? (
+                            <div style={{ marginTop: "14px" }}>
+                              <label
+                                style={{
+                                  display: "block",
+                                  marginBottom: "8px",
+                                  fontSize: "12px",
+                                  letterSpacing: "0.14em",
+                                  textTransform: "uppercase",
+                                  color: "var(--ackret-gold-dark)",
+                                }}
+                              >
+                                Explain this yes response
+                              </label>
+
+                              <textarea
+                                value={answerObj.explanation}
+                                onChange={(e) =>
+                                  updateExplanation(question.id, e.target.value)
+                                }
+                                placeholder="Describe the issue, what happened, repairs made, dates if known, or any other relevant details."
+                                rows={4}
+                                style={textareaStyle}
+                              />
+                            </div>
+                          ) : null}
                         </div>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
-          ))}
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      marginTop: "-4px",
+                      fontSize: "14px",
+                      color: "var(--ackret-muted)",
+                    }}
+                  >
+                    Click to open this section and answer {questions.length} question
+                    {questions.length === 1 ? "" : "s"}.
+                  </div>
+                )}
+              </Card>
+            );
+          })}
 
           <Card>
             <SectionHeading
@@ -479,6 +685,7 @@ export default function ConditionReportPage() {
           </Card>
         </div>
 
+        {/* RIGHT SUMMARY */}
         <div style={{ display: "grid", gap: "20px", position: "sticky", top: 24 }}>
           <Card>
             <SectionHeading
@@ -486,10 +693,8 @@ export default function ConditionReportPage() {
               title="Condition report summary"
             />
 
-            <StatRow
-              label="Questions in form"
-              value={`${conditionReportQuestions.length}`}
-            />
+            <StatRow label="Questions in form" value={`${totalQuestionCount}`} />
+            <StatRow label="Answered" value={`${answeredCount}`} />
             <StatRow label="Yes responses" value={`${yesCount}`} />
             <StatRow
               label="Lead paint follow-up"
@@ -502,10 +707,6 @@ export default function ConditionReportPage() {
             <StatRow
               label="Draft status"
               value={draftId ? "Saved" : "Not saved yet"}
-            />
-            <StatRow
-              label="Next dashboard step"
-              value="Lead Paint Disclosure"
               last
             />
           </Card>
@@ -549,8 +750,8 @@ export default function ConditionReportPage() {
                 color: "var(--ackret-muted)",
               }}
             >
-              This version saves your answers to the database and generates a
-              downloadable PDF from the saved report.
+              The layout is section-based so the full Wisconsin report stays
+              manageable even with the complete official question set.
             </p>
           </Card>
         </div>

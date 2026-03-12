@@ -1,25 +1,41 @@
 import Image from "next/image";
 
-<div
-  style={{
-    marginBottom: "40px",
-    display: "flex",
-    justifyContent: "center",
-  }}
->
-  <Image
-    src="/logo.png"
-    alt="Ackret"
-    width={500}
-    height={200}
-    style={{
-      width: "auto",
-      height: "90px",
-      objectFit: "contain",
-    }}
-    priority
-  />
-</div>
+export default function Hero() {
+  return (
+    <section
+      style={{
+        padding: "120px 24px 80px",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: "1100px",
+          margin: "0 auto",
+          textAlign: "center",
+        }}
+      >
+        {/* LOGO */}
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            marginBottom: "40px",
+          }}
+        >
+          <Image
+            src="/logo.png"
+            alt="Ackret"
+            width={500}
+            height={200}
+            priority
+            style={{
+              height: "90px",
+              width: "auto",
+              objectFit: "contain",
+            }}
+          />
+        </div>
 
         {/* TAGLINE */}
 
@@ -76,7 +92,7 @@ import Image from "next/image";
           confidence, and less unnecessary cost.
         </p>
 
-        {/* BADGES */}
+        {/* BUTTONS */}
 
         <div
           style={{
@@ -91,7 +107,7 @@ import Image from "next/image";
             style={{
               background: "var(--ackret-navy)",
               color: "#ffffff",
-              padding: "14px 24px",
+              padding: "14px 26px",
               borderRadius: "999px",
               fontSize: "13px",
               letterSpacing: "0.18em",
@@ -107,7 +123,7 @@ import Image from "next/image";
               background: "transparent",
               color: "var(--ackret-gold-dark)",
               border: "1px solid rgba(197, 154, 74, 0.35)",
-              padding: "14px 24px",
+              padding: "14px 26px",
               borderRadius: "999px",
               fontSize: "13px",
               letterSpacing: "0.18em",

@@ -1,152 +1,106 @@
+import Hero from "@/components/Hero";
+import FeatureCard from "@/components/FeatureCard";
+
 export default function Page() {
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "linear-gradient(180deg,#0b0b0c 0%,#121213 100%)",
-        color: "#f5f1e8",
-        fontFamily: "Georgia, 'Times New Roman', serif",
-        padding: "40px"
-      }}
-    >
-      <div
+    <main>
+      <Hero />
+
+      <section
         style={{
-          maxWidth: "800px",
-          textAlign: "center"
+          padding: "10px 24px 110px",
         }}
       >
-        {/* Brand */}
-        <p
-          style={{
-            letterSpacing: "0.35em",
-            fontSize: "12px",
-            textTransform: "uppercase",
-            color: "#c9b27d",
-            marginBottom: "24px"
-          }}
-        >
-          Ackret
-        </p>
-
-        {/* Headline */}
-        <h1
-          style={{
-            fontSize: "64px",
-            lineHeight: "1.1",
-            marginBottom: "24px",
-            fontWeight: 500
-          }}
-        >
-          Direct home transactions,
-          <span style={{ color: "#c9b27d", display: "block" }}>
-            reimagined.
-          </span>
-        </h1>
-
-        {/* Description */}
-        <p
-          style={{
-            fontSize: "18px",
-            lineHeight: "1.7",
-            color: "#d2cbbd",
-            maxWidth: "620px",
-            margin: "0 auto"
-          }}
-        >
-          Ackret is building a modern platform that gives buyers and sellers
-          more control over the home transaction process — simplifying
-          negotiations, reducing costs, and making direct property transactions
-          easier than ever before.
-        </p>
-
-        {/* Coming soon badge */}
         <div
           style={{
-            marginTop: "48px",
-            display: "inline-block",
-            padding: "12px 28px",
-            border: "1px solid #c9b27d",
-            letterSpacing: "0.2em",
-            fontSize: "12px",
-            textTransform: "uppercase"
-          }}
-        >
-          Coming Soon
-        </div>
-
-        {/* Feature row */}
-        <div
-          style={{
-            marginTop: "80px",
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            gap: "28px"
+            maxWidth: "1100px",
+            margin: "0 auto",
           }}
         >
           <div
             style={{
-              border: "1px solid rgba(255,255,255,0.08)",
-              padding: "24px"
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+              gap: "24px",
             }}
           >
-            <p
-              style={{
-                fontSize: "12px",
-                letterSpacing: "0.25em",
-                color: "#c9b27d",
-                textTransform: "uppercase",
-                marginBottom: "10px"
-              }}
-            >
-              Built For
-            </p>
-            <p>Independent sellers</p>
+            <FeatureCard
+              eyebrow="Built For"
+              title="Independent sellers"
+              description="Homeowners who want a more direct path to market without relying on the traditional commission model."
+            />
+
+            <FeatureCard
+              eyebrow="Designed For"
+              title="Confident buyers"
+              description="Buyers who want better visibility into the transaction and a cleaner process from first interest to closing."
+            />
+
+            <FeatureCard
+              eyebrow="Focused On"
+              title="Simpler transactions"
+              description="A more modern experience for pricing, communication, offer flow, and closing coordination."
+            />
           </div>
 
           <div
             style={{
-              border: "1px solid rgba(255,255,255,0.08)",
-              padding: "24px"
+              marginTop: "72px",
+              background: "var(--ackret-surface)",
+              border: "1px solid var(--ackret-border)",
+              boxShadow: "var(--ackret-shadow)",
+              borderRadius: "28px",
+              padding: "44px 32px",
+              textAlign: "center",
             }}
           >
             <p
               style={{
+                margin: 0,
                 fontSize: "12px",
-                letterSpacing: "0.25em",
-                color: "#c9b27d",
+                letterSpacing: "0.22em",
                 textTransform: "uppercase",
-                marginBottom: "10px"
+                color: "var(--ackret-gold-dark)",
               }}
             >
-              Designed For
+              Ackret
             </p>
-            <p>Confident buyers</p>
-          </div>
 
-          <div
-            style={{
-              border: "1px solid rgba(255,255,255,0.08)",
-              padding: "24px"
-            }}
-          >
-            <p
+            <h2
               style={{
-                fontSize: "12px",
-                letterSpacing: "0.25em",
-                color: "#c9b27d",
-                textTransform: "uppercase",
-                marginBottom: "10px"
+                marginTop: "16px",
+                marginBottom: "18px",
+                fontSize: "clamp(2rem, 4vw, 3.5rem)",
+                lineHeight: 1.05,
+                color: "var(--ackret-navy)",
+                fontWeight: 500,
               }}
             >
-              Focused On
+              Direct home transactions,
+              <span
+                style={{
+                  display: "block",
+                }}
+              >
+                reimagined.
+              </span>
+            </h2>
+
+            <p
+              style={{
+                maxWidth: "720px",
+                margin: "0 auto",
+                fontSize: "18px",
+                lineHeight: 1.8,
+                color: "var(--ackret-muted)",
+              }}
+            >
+              Premium guidance. Clear structure. More control for buyers and
+              sellers. Ackret is coming soon.
             </p>
-            <p>Simpler transactions</p>
           </div>
         </div>
-      </div>
+      </section>
     </main>
-  )
+  );
 }

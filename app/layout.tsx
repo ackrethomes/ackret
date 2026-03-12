@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Ackret",
-  description: "Ackret — coming soon",
+  description: "Ackret — Direct Home Transactions",
 };
 
 export default function RootLayout({

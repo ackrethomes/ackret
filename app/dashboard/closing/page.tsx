@@ -7,7 +7,7 @@ export default function ClosingPage() {
       title="Closing"
       description="Finish the final stage of the transaction by coordinating with the title or closing company and completing the sale."
       bullets={[
-        "Work with the closing company on final documents and timing.",
+        "Work with the closing company on final documents and timin.",
         "Complete any final signatures and required steps.",
         "Finalize the sale and complete your direct home transaction.",
       ]}

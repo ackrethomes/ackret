@@ -61,6 +61,9 @@ export default function ConditionReportPage() {
     return initial;
   });
 
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
   const yesCount = useMemo(() => {
     return Object.values(answers).filter((item) => item.answer === "yes").length;
   }, [answers]);
@@ -95,9 +98,73 @@ export default function ConditionReportPage() {
     }));
   }
 
-  function handleSaveDraft() {
-    console.log("Condition report draft:", { form, answers });
-    alert("Draft saved locally in this first version. Database save can be added next.");
+  async function handleSaveDraft() {
+    try {
+      setIsSaving(true);
+
+      const response = await fetch("/api/condition-report", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: draftId,
+          form,
+          answers,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to save draft.");
+      }
+
+      setDraftId(data.id);
+      alert("Draft saved.");
+    } catch (error) {
+      console.error(error);
+      alert("Unable to save draft.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleDownloadPdf() {
+    try {
+      let activeDraftId = draftId;
+
+      if (!activeDraftId) {
+        setIsSaving(true);
+
+        const response = await fetch("/api/condition-report", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            form,
+            answers,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data?.error || "Failed to save draft before PDF generation.");
+        }
+
+        activeDraftId = data.id;
+        setDraftId(data.id);
+      }
+
+      window.open(`/api/condition-report/${activeDraftId}/pdf`, "_blank");
+    } catch (error) {
+      console.error(error);
+      alert("Unable to generate PDF.");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -209,7 +276,10 @@ export default function ConditionReportPage() {
                 label="Built Before 1978?"
                 value={form.builtBefore1978}
                 onChange={(value) =>
-                  updateForm("builtBefore1978", value as FormState["builtBefore1978"])
+                  updateForm(
+                    "builtBefore1978",
+                    value as FormState["builtBefore1978"]
+                  )
                 }
                 options={["yes", "no"]}
               />
@@ -416,11 +486,22 @@ export default function ConditionReportPage() {
               title="Condition report summary"
             />
 
-            <StatRow label="Questions in form" value={`${conditionReportQuestions.length}`} />
+            <StatRow
+              label="Questions in form"
+              value={`${conditionReportQuestions.length}`}
+            />
             <StatRow label="Yes responses" value={`${yesCount}`} />
             <StatRow
               label="Lead paint follow-up"
-              value={form.builtBefore1978 === "yes" ? "Needed" : "Not needed / unknown"}
+              value={
+                form.builtBefore1978 === "yes"
+                  ? "Needed"
+                  : "Not needed / unknown"
+              }
+            />
+            <StatRow
+              label="Draft status"
+              value={draftId ? "Saved" : "Not saved yet"}
             />
             <StatRow
               label="Next dashboard step"
@@ -436,8 +517,22 @@ export default function ConditionReportPage() {
             />
 
             <div style={{ display: "grid", gap: "12px" }}>
-              <button type="button" onClick={handleSaveDraft} style={primaryButtonStyle}>
-                Save Draft
+              <button
+                type="button"
+                onClick={handleSaveDraft}
+                style={primaryButtonStyle}
+                disabled={isSaving}
+              >
+                {isSaving ? "Saving..." : "Save Draft"}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                style={secondaryActionButtonStyle}
+                disabled={isSaving}
+              >
+                {isSaving ? "Working..." : "Save and Download PDF"}
               </button>
 
               <Link href={nextStep.href} style={{ textDecoration: "none" }}>
@@ -454,8 +549,8 @@ export default function ConditionReportPage() {
                 color: "var(--ackret-muted)",
               }}
             >
-              This first version is the online form experience. PDF generation can
-              be connected after the answers and save flow are finalized.
+              This version saves your answers to the database and generates a
+              downloadable PDF from the saved report.
             </p>
           </Card>
         </div>
@@ -695,6 +790,20 @@ const primaryButtonStyle: React.CSSProperties = {
   textTransform: "uppercase",
   cursor: "pointer",
   boxShadow: "var(--ackret-shadow)",
+};
+
+const secondaryActionButtonStyle: React.CSSProperties = {
+  width: "100%",
+  borderRadius: "999px",
+  padding: "16px 20px",
+  background: "#ffffff",
+  color: "var(--ackret-navy)",
+  border: "1px solid rgba(22,58,112,0.15)",
+  fontSize: "13px",
+  letterSpacing: "0.14em",
+  textTransform: "uppercase",
+  cursor: "pointer",
+  boxSizing: "border-box",
 };
 
 const secondaryButtonStyle: React.CSSProperties = {

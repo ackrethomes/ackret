@@ -159,43 +159,35 @@ export default function ConditionReportPage() {
   }
 
   async function handleDownloadPdf() {
-    try {
-      let activeDraftId = draftId;
+  try {
+    setIsSaving(true);
 
-      if (!activeDraftId) {
-        setIsSaving(true);
+    const response = await fetch("/api/condition-report/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        form,
+        answers,
+      }),
+    });
 
-        const response = await fetch("/api/condition-report", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            form,
-            answers,
-          }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            data?.error || "Failed to save draft before PDF generation."
-          );
-        }
-
-        activeDraftId = data.id;
-        setDraftId(data.id);
-      }
-
-      window.open(`/api/condition-report/${activeDraftId}/pdf`, "_blank");
-    } catch (error) {
-      console.error(error);
-      alert("Unable to generate PDF.");
-    } finally {
-      setIsSaving(false);
+    if (!response.ok) {
+      const data = await response.json().catch(() => null);
+      throw new Error(data?.error || "Failed to generate PDF.");
     }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+  } catch (error) {
+    console.error(error);
+    alert("Unable to generate PDF.");
+  } finally {
+    setIsSaving(false);
   }
+}
 
   return (
     <div style={{ maxWidth: "1180px" }}>

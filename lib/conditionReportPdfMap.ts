@@ -25,9 +25,9 @@ function makeAnswerRow(
  * Start with the values you already know are correct from B1/B2.
  */
 const PAGE_2_B_COLUMNS = {
-  yesX: 250,
-  noX: 250,
-  naX: 250,
+  yesX: 500,
+  noX: 550,
+  naX: 600,
 };
 
 const PAGE_3_C_COLUMNS = {
@@ -66,7 +66,7 @@ export const questionAnswerPdfMap: ConditionReportQuestionPdfMap = {
    * PDF page index 1 in your current setup
    * Fill these with your real y-values row by row
    */
-  b1: makeAnswerRow(1, PAGE_2_B_COLUMNS.yesX, PAGE_2_B_COLUMNS.noX, PAGE_2_B_COLUMNS.naX, 100),
+  b1: makeAnswerRow(1, PAGE_2_B_COLUMNS.yesX, PAGE_2_B_COLUMNS.noX, PAGE_2_B_COLUMNS.naX, 250),
   b2: makeAnswerRow(1, PAGE_2_B_COLUMNS.yesX, PAGE_2_B_COLUMNS.noX, PAGE_2_B_COLUMNS.naX, 90),
   b3: makeAnswerRow(1, PAGE_2_B_COLUMNS.yesX, PAGE_2_B_COLUMNS.noX, PAGE_2_B_COLUMNS.naX, 80),
   b4: makeAnswerRow(1, PAGE_2_B_COLUMNS.yesX, PAGE_2_B_COLUMNS.noX, PAGE_2_B_COLUMNS.naX, 0),

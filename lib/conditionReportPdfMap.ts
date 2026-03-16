@@ -74,7 +74,7 @@ export const municipalityTypeCircleMap: MunicipalityTypeCircleMap = {
 
 export const ownerInfoPdfMap = {
   yearsOwned: { page: 7, x: 294, y: 715, width: 40, height: 14 },
-  yearsOccupied: { page: 7, x: 297, y: 695, width: 40, height: 14 },
+  yearsOccupied: { page: 7, x: 297, y: 700, width: 40, height: 14 },
 };
 
 export const questionAnswerPdfMap: ConditionReportQuestionPdfMap = {

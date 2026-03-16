@@ -148,10 +148,10 @@ export const questionAnswerPdfMap: ConditionReportQuestionPdfMap = {
 };
 
 export const sectionExplanationPdfMap: SectionExplanationPdfMap = {
-  B: { page: 2, x: 150, y: 200, width: 400, height: 20 },
-  C: { page: 3, x: 150, y: 437, width: 400, height: 20 },
-  D: { page: 4, x: 150, y: 575, width: 400, height: 20 },
-  E: { page: 4, x: 150, y: 302, width: 400, height: 20 },
-  F: { page: 6, x: 150, y: 344, width: 400, height: 20 },
-  G: { page: 7, x: 150, y: 664, width: 400, height: 20 },
+  B: { page: 2, x: 150, y: 172, width: 400, height: 50 },
+  C: { page: 3, x: 150, y: 409, width: 400, height: 50 },
+  D: { page: 4, x: 150, y: 547, width: 400, height: 50 },
+  E: { page: 4, x: 150, y: 274, width: 400, height: 50 },
+  F: { page: 6, x: 150, y: 316, width: 400, height: 50 },
+  G: { page: 7, x: 150, y: 636, width: 400, height: 50 },
 };

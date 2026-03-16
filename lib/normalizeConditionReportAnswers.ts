@@ -20,7 +20,14 @@ function normalizeAnswer(value: string | null | undefined): AnswerChoice | null 
 
 function normalizeSection(value: string): ConditionSectionKey {
   const upper = value.trim().toUpperCase();
-  if (upper === "B" || upper === "C" || upper === "D" || upper === "E" || upper === "F" || upper === "G") {
+  if (
+    upper === "B" ||
+    upper === "C" ||
+    upper === "D" ||
+    upper === "E" ||
+    upper === "F" ||
+    upper === "G"
+  ) {
     return upper;
   }
   throw new Error(`Invalid section: ${value}`);
@@ -29,17 +36,19 @@ function normalizeSection(value: string): ConditionSectionKey {
 export function normalizeConditionReportAnswers(
   items: RawFormAnswer[]
 ): ConditionReportAnswer[] {
-  return items
-    .map((item) => {
-      const answer = normalizeAnswer(item.answer);
-      if (!answer) return null;
+  const normalized: ConditionReportAnswer[] = [];
 
-      return {
-        questionId: item.id,
-        section: normalizeSection(item.section),
-        answer,
-        explanation: item.explanation?.trim() || undefined,
-      } satisfies ConditionReportAnswer;
-    })
-    .filter((item): item is ConditionReportAnswer => Boolean(item));
+  for (const item of items) {
+    const answer = normalizeAnswer(item.answer);
+    if (!answer) continue;
+
+    normalized.push({
+      questionId: item.id,
+      section: normalizeSection(item.section),
+      answer,
+      explanation: item.explanation?.trim() || undefined,
+    });
+  }
+
+  return normalized;
 }

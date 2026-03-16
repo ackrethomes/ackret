@@ -17,11 +17,6 @@ export async function GET() {
     { questionId: "b9", section: "B", answer: "NA" },
     { questionId: "b10", section: "B", answer: "YES", explanation: "B10 test" },
     { questionId: "b11", section: "B", answer: "NO" },
-    { questionId: "b12", section: "B", answer: "NA" },
-    { questionId: "b13", section: "B", answer: "YES", explanation: "B13 test" },
-    { questionId: "b14", section: "B", answer: "NO" },
-    { questionId: "b15", section: "B", answer: "NA" },
-    { questionId: "b16", section: "B", answer: "YES", explanation: "B16 test" },
 
     // SECTION C
     { questionId: "c1", section: "C", answer: "YES", explanation: "C1 test" },
@@ -42,7 +37,6 @@ export async function GET() {
     { questionId: "d7", section: "D", answer: "YES", explanation: "D7 test" },
     { questionId: "d8", section: "D", answer: "NO" },
     { questionId: "d9", section: "D", answer: "NA" },
-    { questionId: "d10", section: "D", answer: "YES", explanation: "D10 test" },
 
     // SECTION E
     { questionId: "e1", section: "E", answer: "YES", explanation: "E1 test" },
@@ -52,9 +46,8 @@ export async function GET() {
     { questionId: "e5", section: "E", answer: "NO" },
     { questionId: "e6", section: "E", answer: "NA" },
     { questionId: "e7", section: "E", answer: "YES", explanation: "E7 test" },
-    { questionId: "e8", section: "E", answer: "NO" },
 
-        // SECTION F
+    // SECTION F
     { questionId: "f1", section: "F", answer: "YES", explanation: "F1 test" },
     { questionId: "f2", section: "F", answer: "NO" },
     { questionId: "f3", section: "F", answer: "NA" },
@@ -64,29 +57,36 @@ export async function GET() {
     { questionId: "f7", section: "F", answer: "YES", explanation: "F7 test" },
     { questionId: "f8", section: "F", answer: "NO" },
     { questionId: "f9", section: "F", answer: "NA" },
-    { questionId: "f10a", section: "F", answer: "YES", explanation: "F10 test" },
-    { questionId: "f10b", section: "F", answer: "YES", explanation: "F10 test" },
-    { questionId: "f10c", section: "F", answer: "YES", explanation: "F10 test" },
-    { questionId: "f11", section: "F", answer: "NO" },
-    { questionId: "f12", section: "F", answer: "NA" },
-    { questionId: "f13", section: "F", answer: "YES", explanation: "F13 test" },
-    { questionId: "f14", section: "F", answer: "NO" },
-    { questionId: "f15", section: "F", answer: "NA" },
-    { questionId: "f16", section: "F", answer: "YES", explanation: "F16 test" },
-    { questionId: "f17", section: "F", answer: "NO" },
-    { questionId: "f18", section: "F", answer: "NA" },
-    { questionId: "f19", section: "F", answer: "YES", explanation: "F19 test" },
-    { questionId: "f20", section: "F", answer: "NO" },
+    { questionId: "f10a", section: "F", answer: "YES", explanation: "F10a test" },
+    { questionId: "f10b", section: "F", answer: "NO" },
+    { questionId: "f10c", section: "F", answer: "NA" },
+    { questionId: "f11", section: "F", answer: "YES", explanation: "F11 test" },
+    { questionId: "f12", section: "F", answer: "NO" },
+    { questionId: "f13", section: "F", answer: "NA" },
+    { questionId: "f14", section: "F", answer: "YES", explanation: "F14 test" },
+    { questionId: "f15", section: "F", answer: "NO" },
+    { questionId: "f16", section: "F", answer: "NA" },
+    { questionId: "f17", section: "F", answer: "YES", explanation: "F17 test" },
+    { questionId: "f18", section: "F", answer: "NO" },
+    { questionId: "f19", section: "F", answer: "NA" },
+    { questionId: "f20", section: "F", answer: "YES", explanation: "F20 test" },
 
     // SECTION G
     { questionId: "g1", section: "G", answer: "YES", explanation: "G1 test" },
     { questionId: "g2", section: "G", answer: "NO" },
     { questionId: "g3", section: "G", answer: "NA" },
     { questionId: "g4", section: "G", answer: "YES", explanation: "G4 test" },
-    { questionId: "g5", section: "G", answer: "NA" },
+    { questionId: "g5", section: "G", answer: "NO" },
   ] as const;
 
   const pdfBytes = await renderConditionReportPdf({
+    form: {
+      propertyAddress: "123 Main Street",
+      municipalityType: "City",
+      municipalityName: "Elkhorn",
+      county: "Walworth",
+      reportDate: "2026-03-16",
+    },
     answers: answers as any,
     debug: true,
   });

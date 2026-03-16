@@ -1,6 +1,7 @@
 import type {
   ConditionReportQuestionPdfMap,
-  PdfRect,
+  DisclaimerPdfMap,
+  MunicipalityTypeCircleMap,
   SectionExplanationPdfMap,
 } from "./conditionReportPdfTypes";
 
@@ -20,10 +21,6 @@ function makeAnswerRow(
   };
 }
 
-/**
- * REPLACE THESE CONSTANTS WITH YOUR REAL VALUES
- * Start with the values you already know are correct from B1/B2.
- */
 const PAGE_2_B_COLUMNS = {
   yesX: 412,
   noX: 460,
@@ -60,12 +57,23 @@ const PAGE_7_G_COLUMNS = {
   naX: 510,
 };
 
+export const disclaimerPdfMap: DisclaimerPdfMap = {
+  propertyAddress: { page: 1, x: 315, y: 697, width: 205, height: 16 },
+  municipalityName: { page: 1, x: 430, y: 697, width: 145, height: 16 },
+  county: { page: 1, x: 520, y: 697, width: 90, height: 16 },
+  reportMonth: { page: 1, x: 242, y: 678, width: 78, height: 16 },
+  reportDay: { page: 1, x: 292, y: 678, width: 42, height: 16 },
+  reportYear: { page: 1, x: 327, y: 678, width: 58, height: 16 },
+};
+
+export const municipalityTypeCircleMap: MunicipalityTypeCircleMap = {
+  City: { page: 1, x: 385, y: 687, width: 20, height: 10 },
+  Village: { page: 1, x: 409, y: 687, width: 40, height: 10 },
+  Town: { page: 1, x: 452, y: 687, width: 20, height: 10 },
+};
+
 export const questionAnswerPdfMap: ConditionReportQuestionPdfMap = {
-  /**
-   * SECTION B
-   * PDF page index 1 in your current setup
-   * Fill these with your real y-values row by row
-   */
+  // SECTION B
   b1: makeAnswerRow(1, PAGE_2_B_COLUMNS.yesX, PAGE_2_B_COLUMNS.noX, PAGE_2_B_COLUMNS.naX, 218),
   b2: makeAnswerRow(1, PAGE_2_B_COLUMNS.yesX, PAGE_2_B_COLUMNS.noX, PAGE_2_B_COLUMNS.naX, 185),
   b3: makeAnswerRow(1, PAGE_2_B_COLUMNS.yesX, PAGE_2_B_COLUMNS.noX, PAGE_2_B_COLUMNS.naX, 135),
@@ -77,11 +85,8 @@ export const questionAnswerPdfMap: ConditionReportQuestionPdfMap = {
   b9: makeAnswerRow(2, PAGE_2_B_COLUMNS.yesX, PAGE_2_B_COLUMNS.noX, PAGE_2_B_COLUMNS.naX, 356),
   b10: makeAnswerRow(2, PAGE_2_B_COLUMNS.yesX, PAGE_2_B_COLUMNS.noX, PAGE_2_B_COLUMNS.naX, 292),
   b11: makeAnswerRow(2, PAGE_2_B_COLUMNS.yesX, PAGE_2_B_COLUMNS.noX, PAGE_2_B_COLUMNS.naX, 255),
-  
-  /**
-   * SECTION C
-   * Replace page index if needed
-   */
+
+  // SECTION C
   c1: makeAnswerRow(3, PAGE_3_C_COLUMNS.yesX, PAGE_3_C_COLUMNS.noX, PAGE_3_C_COLUMNS.naX, 715),
   c2: makeAnswerRow(3, PAGE_3_C_COLUMNS.yesX, PAGE_3_C_COLUMNS.noX, PAGE_3_C_COLUMNS.naX, 695),
   c3: makeAnswerRow(3, PAGE_3_C_COLUMNS.yesX, PAGE_3_C_COLUMNS.noX, PAGE_3_C_COLUMNS.naX, 600),
@@ -90,9 +95,7 @@ export const questionAnswerPdfMap: ConditionReportQuestionPdfMap = {
   c6: makeAnswerRow(3, PAGE_3_C_COLUMNS.yesX, PAGE_3_C_COLUMNS.noX, PAGE_3_C_COLUMNS.naX, 507),
   c7: makeAnswerRow(3, PAGE_3_C_COLUMNS.yesX, PAGE_3_C_COLUMNS.noX, PAGE_3_C_COLUMNS.naX, 480),
 
-  /**
-   * SECTION D
-   */
+  // SECTION D
   d1: makeAnswerRow(3, PAGE_4_D_COLUMNS.yesX, PAGE_4_D_COLUMNS.noX, PAGE_4_D_COLUMNS.naX, 395),
   d2: makeAnswerRow(3, PAGE_4_D_COLUMNS.yesX, PAGE_4_D_COLUMNS.noX, PAGE_4_D_COLUMNS.naX, 285),
   d3: makeAnswerRow(3, PAGE_4_D_COLUMNS.yesX, PAGE_4_D_COLUMNS.noX, PAGE_4_D_COLUMNS.naX, 270),
@@ -103,9 +106,7 @@ export const questionAnswerPdfMap: ConditionReportQuestionPdfMap = {
   d8: makeAnswerRow(4, PAGE_4_D_COLUMNS.yesX, PAGE_4_D_COLUMNS.noX, PAGE_4_D_COLUMNS.naX, 643),
   d9: makeAnswerRow(4, PAGE_4_D_COLUMNS.yesX, PAGE_4_D_COLUMNS.noX, PAGE_4_D_COLUMNS.naX, 610),
 
-  /**
-   * SECTION E
-   */
+  // SECTION E
   e1: makeAnswerRow(4, PAGE_5_E_COLUMNS.yesX, PAGE_5_E_COLUMNS.noX, PAGE_5_E_COLUMNS.naX, 532),
   e2: makeAnswerRow(4, PAGE_5_E_COLUMNS.yesX, PAGE_5_E_COLUMNS.noX, PAGE_5_E_COLUMNS.naX, 498),
   e3: makeAnswerRow(4, PAGE_5_E_COLUMNS.yesX, PAGE_5_E_COLUMNS.noX, PAGE_5_E_COLUMNS.naX, 472),
@@ -114,9 +115,7 @@ export const questionAnswerPdfMap: ConditionReportQuestionPdfMap = {
   e6: makeAnswerRow(4, PAGE_5_E_COLUMNS.yesX, PAGE_5_E_COLUMNS.noX, PAGE_5_E_COLUMNS.naX, 387),
   e7: makeAnswerRow(4, PAGE_5_E_COLUMNS.yesX, PAGE_5_E_COLUMNS.noX, PAGE_5_E_COLUMNS.naX, 345),
 
-  /**
-   * SECTION F
-   */
+  // SECTION F
   f1: makeAnswerRow(4, PAGE_6_F_COLUMNS.yesX, PAGE_6_F_COLUMNS.noX, PAGE_6_F_COLUMNS.naX, 259),
   f2: makeAnswerRow(4, PAGE_6_F_COLUMNS.yesX, PAGE_6_F_COLUMNS.noX, PAGE_6_F_COLUMNS.naX, 233),
   f3: makeAnswerRow(4, PAGE_6_F_COLUMNS.yesX, PAGE_6_F_COLUMNS.noX, PAGE_6_F_COLUMNS.naX, 200),
@@ -140,9 +139,7 @@ export const questionAnswerPdfMap: ConditionReportQuestionPdfMap = {
   f19: makeAnswerRow(6, PAGE_6_F_COLUMNS.yesX, PAGE_6_F_COLUMNS.noX, PAGE_6_F_COLUMNS.naX, 485),
   f20: makeAnswerRow(6, PAGE_6_F_COLUMNS.yesX, PAGE_6_F_COLUMNS.noX, PAGE_6_F_COLUMNS.naX, 410),
 
-  /**
-   * SECTION G
-   */
+  // SECTION G
   g1: makeAnswerRow(6, PAGE_7_G_COLUMNS.yesX, PAGE_7_G_COLUMNS.noX, PAGE_7_G_COLUMNS.naX, 303),
   g2: makeAnswerRow(6, PAGE_7_G_COLUMNS.yesX, PAGE_7_G_COLUMNS.noX, PAGE_7_G_COLUMNS.naX, 277),
   g3: makeAnswerRow(6, PAGE_7_G_COLUMNS.yesX, PAGE_7_G_COLUMNS.noX, PAGE_7_G_COLUMNS.naX, 242),
@@ -151,10 +148,10 @@ export const questionAnswerPdfMap: ConditionReportQuestionPdfMap = {
 };
 
 export const sectionExplanationPdfMap: SectionExplanationPdfMap = {
-  B: { page: 2, x: 0, y: 0, width: 0, height: 0 },
-  C: { page: 3, x: 0, y: 0, width: 0, height: 0 },
-  D: { page: 4, x: 0, y: 0, width: 0, height: 0 },
-  E: { page: 4, x: 0, y: 0, width: 0, height: 0 },
-  F: { page: 5, x: 0, y: 0, width: 0, height: 0 },
-  G: { page: 6, x: 0, y: 0, width: 0, height: 0 },
+  B: { page: 2, x: 150, y: 200, width: 400, height: 20 },
+  C: { page: 3, x: 150, y: 437, width: 400, height: 20 },
+  D: { page: 4, x: 150, y: 575, width: 400, height: 20 },
+  E: { page: 4, x: 150, y: 302, width: 400, height: 20 },
+  F: { page: 6, x: 150, y: 344, width: 400, height: 20 },
+  G: { page: 7, x: 150, y: 664, width: 400, height: 20 },
 };

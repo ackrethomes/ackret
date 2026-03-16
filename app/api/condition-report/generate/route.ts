@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
     );
 
     const pdfBytes = await renderConditionReportPdf({
+      form: body.form,
       answers: normalizedAnswers,
       debug: Boolean(body.debug),
     });

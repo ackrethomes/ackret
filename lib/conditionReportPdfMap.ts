@@ -72,6 +72,11 @@ export const municipalityTypeCircleMap: MunicipalityTypeCircleMap = {
   Town: { page: 1, x: 452, y: 687, width: 20, height: 10 },
 };
 
+export const ownerInfoPdfMap = {
+  yearsOwned: { page: 7, x: 290, y: 709, width: 40, height: 14 },
+  yearsOccupied: { page: 7, x: 293, y: 689, width: 40, height: 14 },
+};
+
 export const questionAnswerPdfMap: ConditionReportQuestionPdfMap = {
   // SECTION B
   b1: makeAnswerRow(1, PAGE_2_B_COLUMNS.yesX, PAGE_2_B_COLUMNS.noX, PAGE_2_B_COLUMNS.naX, 218),

@@ -4,6 +4,7 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import {
   disclaimerPdfMap,
   municipalityTypeCircleMap,
+  ownerInfoPdfMap,
   questionAnswerPdfMap,
   sectionExplanationPdfMap,
 } from "./conditionReportPdfMap";
@@ -281,7 +282,7 @@ function drawDisclaimerFields(
     }
   }
 
-    if (debug) {
+  if (debug) {
     const municipalityOptions: Array<"City" | "Village" | "Town"> = [
       "City",
       "Village",
@@ -325,6 +326,34 @@ function drawDisclaimerFields(
   }
 }
 
+function drawOwnerInfoFields(
+  pages: any[],
+  form: ConditionReportPdfFormData | undefined,
+  font: any,
+  debug: boolean
+) {
+  if (!form) return;
+
+  const { yearsOwned = "", yearsOccupied = "" } = form;
+
+  const fields = [
+    { key: "yearsOwned", value: yearsOwned },
+    { key: "yearsOccupied", value: yearsOccupied },
+  ] as const;
+
+  for (const field of fields) {
+    const rect = ownerInfoPdfMap[field.key];
+    const page = pages[rect.page];
+    if (!page) continue;
+
+    drawSingleLineText(page, String(field.value), rect, font, 10);
+
+    if (debug) {
+      drawDebugRect(page, rect, `ownerInfo.${field.key}`, rgb(0, 0.6, 0.6));
+    }
+  }
+}
+
 export async function renderConditionReportPdf({
   form,
   answers,
@@ -343,6 +372,7 @@ export async function renderConditionReportPdf({
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
   drawDisclaimerFields(pages, form, font, debug);
+  drawOwnerInfoFields(pages, form, font, debug);
 
   for (const item of answers) {
     const map = questionAnswerPdfMap[item.questionId];
@@ -355,9 +385,24 @@ export async function renderConditionReportPdf({
     drawCenteredX(page, rect);
 
     if (debug) {
-      drawDebugRect(pages[map.yes.page], map.yes, `${item.questionId}.yes`, rgb(1, 0, 0));
-      drawDebugRect(pages[map.no.page], map.no, `${item.questionId}.no`, rgb(0, 0, 1));
-      drawDebugRect(pages[map.na.page], map.na, `${item.questionId}.na`, rgb(0, 0.6, 0));
+      drawDebugRect(
+        pages[map.yes.page],
+        map.yes,
+        `${item.questionId}.yes`,
+        rgb(1, 0, 0)
+      );
+      drawDebugRect(
+        pages[map.no.page],
+        map.no,
+        `${item.questionId}.no`,
+        rgb(0, 0, 1)
+      );
+      drawDebugRect(
+        pages[map.na.page],
+        map.na,
+        `${item.questionId}.na`,
+        rgb(0, 0.6, 0)
+      );
     }
   }
 

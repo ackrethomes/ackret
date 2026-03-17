@@ -3,7 +3,6 @@ import path from "path";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import {
   disclaimerPdfMap,
-  municipalityTypeCircleMap,
   ownerInfoPdfMap,
   questionAnswerPdfMap,
   sectionExplanationPdfMap,
@@ -122,20 +121,6 @@ function drawSingleLineText(
     size: fontSize,
     font,
     color: rgb(0, 0, 0),
-  });
-}
-
-function drawOval(
-  page: any,
-  oval: { x: number; y: number; width: number; height: number }
-) {
-  page.drawEllipse({
-    x: oval.x + oval.width / 2,
-    y: oval.y + oval.height / 2,
-    xScale: oval.width / 2,
-    yScale: oval.height / 2,
-    borderColor: rgb(0, 0, 0),
-    borderWidth: 1.2,
   });
 }
 
@@ -263,6 +248,7 @@ function drawDisclaimerFields(
 
   const fieldValues = [
     { key: "propertyAddress", value: propertyAddress },
+    { key: "municipalityType", value: municipalityType },
     { key: "municipalityName", value: municipalityName },
     { key: "county", value: county },
     { key: "reportMonth", value: month },
@@ -279,49 +265,6 @@ function drawDisclaimerFields(
 
     if (debug) {
       drawDebugRect(page, rect, `disclaimer.${field.key}`, rgb(0.8, 0.2, 0.8));
-    }
-  }
-
-  if (debug) {
-    const municipalityOptions: Array<"City" | "Village" | "Town"> = [
-      "City",
-      "Village",
-      "Town",
-    ];
-
-    for (const option of municipalityOptions) {
-      const oval = municipalityTypeCircleMap[option];
-      const page = pages[oval.page];
-      if (!page) continue;
-
-      drawDebugRect(
-        page,
-        {
-          page: oval.page,
-          x: oval.x,
-          y: oval.y,
-          width: oval.width,
-          height: oval.height,
-        },
-        `municipalityType.${option}`,
-        rgb(0.1, 0.5, 0.8)
-      );
-    }
-  }
-
-  const normalizedMunicipalityType =
-    municipalityType === "City" ||
-    municipalityType === "Village" ||
-    municipalityType === "Town"
-      ? municipalityType
-      : null;
-
-  if (normalizedMunicipalityType) {
-    const oval = municipalityTypeCircleMap[normalizedMunicipalityType];
-    const page = pages[oval.page];
-
-    if (page) {
-      drawOval(page, oval);
     }
   }
 }

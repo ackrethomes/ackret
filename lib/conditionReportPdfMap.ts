@@ -1,7 +1,6 @@
 import type {
   ConditionReportQuestionPdfMap,
   DisclaimerPdfMap,
-  MunicipalityTypeCircleMap,
   SectionExplanationPdfMap,
 } from "./conditionReportPdfTypes";
 
@@ -22,9 +21,9 @@ function makeAnswerRow(
 }
 
 const PAGE_2_B_COLUMNS = {
-  yesX: 412,
-  noX: 460,
-  naX: 510,
+  yesX: 402,
+  noX: 450,
+  naX: 500,
 };
 
 const PAGE_3_C_COLUMNS = {
@@ -58,18 +57,13 @@ const PAGE_7_G_COLUMNS = {
 };
 
 export const disclaimerPdfMap: DisclaimerPdfMap = {
-  propertyAddress: { page: 1, x: 315, y: 697, width: 205, height: 16 },
-  municipalityName: { page: 1, x: 430, y: 697, width: 145, height: 16 },
-  county: { page: 1, x: 520, y: 697, width: 90, height: 16 },
-  reportMonth: { page: 1, x: 242, y: 678, width: 78, height: 16 },
-  reportDay: { page: 1, x: 292, y: 678, width: 42, height: 16 },
-  reportYear: { page: 1, x: 327, y: 678, width: 58, height: 16 },
-};
-
-export const municipalityTypeCircleMap: MunicipalityTypeCircleMap = {
-  City: { page: 1, x: 385, y: 687, width: 20, height: 10 },
-  Village: { page: 1, x: 409, y: 687, width: 40, height: 10 },
-  Town: { page: 1, x: 452, y: 687, width: 20, height: 10 },
+  propertyAddress: { page: 1, x: 75, y: 666, width: 205, height: 16 },
+  municipalityType: { page: 1, x: 290, y: 666, width: 40, height: 16 },
+  municipalityName: { page: 1, x: 350, y: 666, width: 145, height: 16 },
+  county: { page: 1, x: 470, y: 666, width: 205, height: 16 },
+  reportMonth: { page: 1, x: 221, y: 648, width: 78, height: 16 },
+  reportDay: { page: 1, x: 285, y: 648, width: 42, height: 16 },
+  reportYear: { page: 1, x: 310, y: 648, width: 58, height: 16 },
 };
 
 export const ownerInfoPdfMap = {
@@ -79,9 +73,9 @@ export const ownerInfoPdfMap = {
 
 export const questionAnswerPdfMap: ConditionReportQuestionPdfMap = {
   // SECTION B
-  b1: makeAnswerRow(1, PAGE_2_B_COLUMNS.yesX, PAGE_2_B_COLUMNS.noX, PAGE_2_B_COLUMNS.naX, 218),
-  b2: makeAnswerRow(1, PAGE_2_B_COLUMNS.yesX, PAGE_2_B_COLUMNS.noX, PAGE_2_B_COLUMNS.naX, 185),
-  b3: makeAnswerRow(1, PAGE_2_B_COLUMNS.yesX, PAGE_2_B_COLUMNS.noX, PAGE_2_B_COLUMNS.naX, 135),
+  b1: makeAnswerRow(1, PAGE_2_B_COLUMNS.yesX, PAGE_2_B_COLUMNS.noX, PAGE_2_B_COLUMNS.naX, 207),
+  b2: makeAnswerRow(1, PAGE_2_B_COLUMNS.yesX, PAGE_2_B_COLUMNS.noX, PAGE_2_B_COLUMNS.naX, 174),
+  b3: makeAnswerRow(1, PAGE_2_B_COLUMNS.yesX, PAGE_2_B_COLUMNS.noX, PAGE_2_B_COLUMNS.naX, 125),
   b4: makeAnswerRow(2, PAGE_2_B_COLUMNS.yesX, PAGE_2_B_COLUMNS.noX, PAGE_2_B_COLUMNS.naX, 715),
   b5: makeAnswerRow(2, PAGE_2_B_COLUMNS.yesX, PAGE_2_B_COLUMNS.noX, PAGE_2_B_COLUMNS.naX, 645),
   b6: makeAnswerRow(2, PAGE_2_B_COLUMNS.yesX, PAGE_2_B_COLUMNS.noX, PAGE_2_B_COLUMNS.naX, 580),

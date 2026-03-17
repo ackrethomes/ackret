@@ -45,25 +45,12 @@ export type ConditionReportPdfFormData = {
 
 export type DisclaimerPdfMap = {
   propertyAddress: PdfRect;
+  municipalityType: PdfRect;
   municipalityName: PdfRect;
   county: PdfRect;
   reportMonth: PdfRect;
   reportDay: PdfRect;
   reportYear: PdfRect;
-};
-
-export type PdfOval = {
-  page: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-};
-
-export type MunicipalityTypeCircleMap = {
-  City: PdfOval;
-  Village: PdfOval;
-  Town: PdfOval;
 };
 
 export type ConditionReportQuestionPdfMap = Record<string, QuestionPdfMap>;

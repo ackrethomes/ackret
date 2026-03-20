@@ -1,38 +1,46 @@
+import SavingsCalculator from "@/components/SavingsCalculator";
+
 export default function HomePage() {
   return (
     <main className="text-slate-900">
       {/* Hero */}
       <section className="border-b border-slate-200">
         <div className="mx-auto max-w-6xl px-6 py-20 md:py-28">
-          <div className="max-w-3xl">
-            <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
-              Wisconsin FSBO Guidance
-            </p>
+          <div className="grid gap-12 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
+            <div className="max-w-3xl">
+              <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+                Wisconsin FSBO Guidance
+              </p>
 
-            <h1 className="text-4xl font-bold tracking-tight text-slate-900 md:text-6xl">
-              Sell Your Home Without a Realtor — Step by Step
-            </h1>
+              <h1 className="text-4xl font-bold tracking-tight text-slate-900 md:text-6xl">
+                Sell Your Home Without a Realtor — Step by Step
+              </h1>
 
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600 md:text-xl">
-              Ackret gives Wisconsin homeowners the exact system, guidance, and
-              structure to sell confidently on their own and keep more of their
-              equity.
-            </p>
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600 md:text-xl">
+                Ackret gives Wisconsin homeowners the exact system, guidance,
+                and structure to sell confidently on their own and keep more of
+                their equity.
+              </p>
 
-            <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-              <a href="/pricing" className="btn-primary text-base">
-                Start My Home Sale
-              </a>
+              <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+                <a href="/pricing" className="btn-primary text-base">
+                  Start My Home Sale
+                </a>
 
-              <a href="#how-it-works" className="btn-secondary text-base">
-                See How It Works
-              </a>
+                <a href="#how-it-works" className="btn-secondary text-base">
+                  See How It Works
+                </a>
+              </div>
+
+              <p className="mt-4 text-sm text-slate-500">
+                Built for Wisconsin homeowners • Step-by-step guidance • Save
+                thousands in commission
+              </p>
             </div>
 
-            <p className="mt-4 text-sm text-slate-500">
-              Built for Wisconsin homeowners • Step-by-step guidance • Save
-              thousands in commission
-            </p>
+            <div className="lg:pt-4">
+              <SavingsCalculator />
+            </div>
           </div>
         </div>
       </section>

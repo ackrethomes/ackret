@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
 import "./globals.css";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Ackret",
-  description: "Ackret — Direct Home Transactions",
+  description: "Wisconsin FSBO Guidance",
 };
 
 export default function RootLayout({

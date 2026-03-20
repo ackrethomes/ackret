@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -15,16 +17,20 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     async function loadUser() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
-      if (!user) {
+        if (!user) {
+          router.replace("/login?next=/checkout");
+          return;
+        }
+
+        setLoadingUser(false);
+      } catch {
         router.replace("/login?next=/checkout");
-        return;
       }
-
-      setLoadingUser(false);
     }
 
     loadUser();
@@ -164,7 +170,9 @@ export default function CheckoutPage() {
                 disabled={isStartingCheckout}
                 className="mt-8 inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-base font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isStartingCheckout ? "Redirecting..." : "Continue to Secure Payment"}
+                {isStartingCheckout
+                  ? "Redirecting..."
+                  : "Continue to Secure Payment"}
               </button>
 
               <p className="mt-4 text-center text-sm text-slate-500">

@@ -1,6 +1,6 @@
 export default function HomePage() {
   return (
-    <main className="bg-white text-slate-900">
+    <main className="text-slate-900">
       {/* Hero */}
       <section className="border-b border-slate-200">
         <div className="mx-auto max-w-6xl px-6 py-20 md:py-28">
@@ -20,17 +20,11 @@ export default function HomePage() {
             </p>
 
             <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-              <a
-                href="/pricing"
-                className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-base font-semibold text-white hover:bg-slate-800"
-              >
+              <a href="/pricing" className="btn-primary text-base">
                 Start My Home Sale
               </a>
 
-              <a
-                href="#how-it-works"
-                className="inline-flex items-center justify-center rounded-xl border border-slate-300 px-6 py-3 text-base font-semibold text-slate-900 hover:bg-slate-50"
-              >
+              <a href="#how-it-works" className="btn-secondary text-base">
                 See How It Works
               </a>
             </div>
@@ -73,7 +67,10 @@ export default function HomePage() {
                 <li>• How do I price the house?</li>
                 <li>• How do I handle showings and offers?</li>
                 <li>• What happens after I accept an offer?</li>
-                <li>• How do I get all the way to closing without missing something important?</li>
+                <li>
+                  • How do I get all the way to closing without missing
+                  something important?
+                </li>
               </ul>
 
               <p>
@@ -106,10 +103,7 @@ export default function HomePage() {
             </p>
 
             <div className="mt-8">
-              <a
-                href="/pricing"
-                className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-base font-semibold text-white hover:bg-slate-800"
-              >
+              <a href="/pricing" className="btn-primary text-base">
                 Get the FSBO System
               </a>
             </div>
@@ -164,10 +158,7 @@ export default function HomePage() {
           </div>
 
           <div className="mt-10">
-            <a
-              href="/pricing"
-              className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-base font-semibold text-white hover:bg-slate-800"
-            >
+            <a href="/pricing" className="btn-primary text-base">
               Start My Home Sale
             </a>
           </div>
@@ -251,10 +242,7 @@ export default function HomePage() {
                 keeping thousands more in your pocket.
               </h3>
               <div className="mt-8">
-                <a
-                  href="/pricing"
-                  className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-base font-semibold text-white hover:bg-slate-800"
-                >
+                <a href="/pricing" className="btn-primary text-base">
                   View Pricing
                 </a>
               </div>
@@ -408,17 +396,11 @@ export default function HomePage() {
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <a
-              href="/pricing"
-              className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-base font-semibold text-white hover:bg-slate-800"
-            >
+            <a href="/pricing" className="btn-primary text-base">
               Start My Home Sale
             </a>
 
-            <a
-              href="/pricing"
-              className="inline-flex items-center justify-center rounded-xl border border-slate-300 px-6 py-3 text-base font-semibold text-slate-900 hover:bg-slate-50"
-            >
+            <a href="/pricing" className="btn-secondary text-base">
               View Pricing
             </a>
           </div>

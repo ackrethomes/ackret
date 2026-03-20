@@ -51,7 +51,7 @@ function SignupForm() {
           <input
             type="email"
             placeholder="Email"
-            className="w-full border p-3 rounded-xl"
+            className="w-full rounded-xl border border-slate-300 p-3 text-slate-900"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
@@ -59,20 +59,18 @@ function SignupForm() {
           <input
             type="password"
             placeholder="Password"
-            className="w-full border p-3 rounded-xl"
+            className="w-full rounded-xl border border-slate-300 p-3 text-slate-900"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
 
-          {errorMessage && (
-            <div className="text-red-600 text-sm">{errorMessage}</div>
-          )}
+          {errorMessage ? (
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {errorMessage}
+            </div>
+          ) : null}
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full bg-slate-900 text-white py-3 rounded-xl"
-          >
+          <button type="submit" disabled={isSubmitting} className="btn-primary w-full text-base">
             {isSubmitting ? "Creating..." : "Continue to Payment"}
           </button>
         </form>
@@ -90,7 +88,16 @@ function SignupForm() {
 
 export default function SignupPage() {
   return (
-    <Suspense fallback={<div className="p-10">Loading...</div>}>
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-white px-6">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-slate-900">Loading...</h1>
+            <p className="mt-3 text-slate-600">Preparing signup page.</p>
+          </div>
+        </main>
+      }
+    >
       <SignupForm />
     </Suspense>
   );

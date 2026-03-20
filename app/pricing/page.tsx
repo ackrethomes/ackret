@@ -32,10 +32,7 @@ export default function PricingPage() {
             </p>
 
             <div className="mt-8">
-              <a
-                href="/signup"
-                className="inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-base font-semibold text-white hover:bg-slate-800"
-              >
+              <a href="/signup" className="btn-primary w-full text-base">
                 Get the FSBO System
               </a>
             </div>
@@ -270,10 +267,7 @@ export default function PricingPage() {
               <div className="mt-4 text-5xl font-bold tracking-tight">$499</div>
 
               <div className="mt-8">
-                <a
-                  href="/signup"
-                  className="inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-base font-semibold text-white hover:bg-slate-800"
-                >
+                <a href="/signup" className="btn-primary w-full text-base">
                   Start My Home Sale
                 </a>
               </div>
@@ -318,17 +312,11 @@ export default function PricingPage() {
           <p className="mt-3 text-base text-slate-600">One-time payment</p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <a
-              href="/signup"
-              className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-base font-semibold text-white hover:bg-slate-800"
-            >
+            <a href="/signup" className="btn-primary text-base">
               Get the FSBO System
             </a>
 
-            <a
-              href="/"
-              className="inline-flex items-center justify-center rounded-xl border border-slate-300 px-6 py-3 text-base font-semibold text-slate-900 hover:bg-slate-50"
-            >
+            <a href="/" className="btn-secondary text-base">
               Back to How It Works
             </a>
           </div>

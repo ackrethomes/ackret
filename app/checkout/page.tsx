@@ -168,7 +168,7 @@ export default function CheckoutPage() {
               <button
                 onClick={handleCheckout}
                 disabled={isStartingCheckout}
-                className="mt-8 inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-base font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="btn-primary mt-8 w-full text-base"
               >
                 {isStartingCheckout
                   ? "Redirecting..."

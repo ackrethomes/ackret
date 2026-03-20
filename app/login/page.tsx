@@ -132,7 +132,7 @@ function LoginForm() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-base font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="btn-primary w-full text-base"
                 >
                   {isSubmitting ? "Logging In..." : "Log In"}
                 </button>

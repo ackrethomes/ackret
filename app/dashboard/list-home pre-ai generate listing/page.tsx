@@ -35,13 +35,6 @@ type ListingChannel = {
   notes: string;
 };
 
-type GeneratedListingCopy = {
-  headline: string;
-  publicDescription: string;
-  mlsRemarks: string;
-  socialPost: string;
-};
-
 const initialChannels: ListingChannel[] = [
   { id: "mls", label: "MLS listing service", planned: true, notes: "" },
   {
@@ -80,27 +73,17 @@ const initialFormState: ListingReadinessState = {
   offerDeadline: "",
 };
 
-const initialGeneratedCopy: GeneratedListingCopy = {
-  headline: "",
-  publicDescription: "",
-  mlsRemarks: "",
-  socialPost: "",
-};
-
 export default function ListHomePage() {
   const router = useRouter();
   const { profile, loading, saving, error, saveProfile } = useSellerProfile();
 
   const [draftId, setDraftId] = useState<string | null>(null);
   const [isWorking, setIsWorking] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [localSaveMessage, setLocalSaveMessage] = useState("Loading...");
   const hasLoadedProfileRef = useRef(false);
 
   const [form, setForm] = useState<ListingReadinessState>(initialFormState);
   const [channels, setChannels] = useState<ListingChannel[]>(initialChannels);
-  const [generatedCopy, setGeneratedCopy] =
-    useState<GeneratedListingCopy>(initialGeneratedCopy);
 
   const previousStep = dashboardSteps[2];
   const nextStep = dashboardSteps[4];
@@ -134,17 +117,6 @@ export default function ListHomePage() {
     setLocalSaveMessage("Saving...");
   }
 
-  function updateGeneratedCopy<K extends keyof GeneratedListingCopy>(
-    key: K,
-    value: GeneratedListingCopy[K]
-  ) {
-    setGeneratedCopy((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-    setLocalSaveMessage("Saving...");
-  }
-
   useEffect(() => {
     if (!profile || hasLoadedProfileRef.current) return;
 
@@ -158,13 +130,6 @@ export default function ListHomePage() {
 
       if (Array.isArray(saved.channels) && saved.channels.length > 0) {
         setChannels(saved.channels);
-      }
-
-      if (saved.generatedCopy) {
-        setGeneratedCopy({
-          ...initialGeneratedCopy,
-          ...saved.generatedCopy,
-        });
       }
 
       setDraftId(saved.draftId ?? null);
@@ -184,7 +149,6 @@ export default function ListHomePage() {
           listHome: {
             form,
             channels,
-            generatedCopy,
             draftId,
           },
         },
@@ -194,7 +158,7 @@ export default function ListHomePage() {
     }, 800);
 
     return () => clearTimeout(timeout);
-  }, [form, channels, generatedCopy, draftId, saveProfile]);
+  }, [form, channels, draftId]);
 
   const plannedChannelsCount = useMemo(
     () => channels.filter((channel) => channel.planned).length,
@@ -239,7 +203,6 @@ export default function ListHomePage() {
           listHome: {
             form,
             channels,
-            generatedCopy,
             draftId: nextDraftId,
           },
         },
@@ -267,7 +230,6 @@ export default function ListHomePage() {
           listHome: {
             form,
             channels,
-            generatedCopy,
             draftId,
           },
         },
@@ -287,58 +249,6 @@ export default function ListHomePage() {
     } finally {
       setIsWorking(false);
     }
-  }
-
-  async function handleGenerateCopy() {
-    try {
-      setIsGenerating(true);
-
-      const setPriceForm = profile?.progress?.setPrice?.form || {};
-      const marketingForm = profile?.progress?.prepareMarketing?.form || {};
-
-      const generated = buildGeneratedListingCopy({
-        listHomeForm: form,
-        setPriceForm,
-        marketingForm,
-      });
-
-      setGeneratedCopy(generated);
-      setLocalSaveMessage("Saving...");
-
-      const result = await saveProfile({
-        currentStep: "list-home",
-        progressPatch: {
-          listHome: {
-            form,
-            channels,
-            generatedCopy: generated,
-            draftId,
-          },
-        },
-      });
-
-      setLocalSaveMessage(result ? "Saved" : "Save failed");
-    } catch (err) {
-      console.error(err);
-      alert("Unable to generate listing copy right now.");
-    } finally {
-      setIsGenerating(false);
-    }
-  }
-
-  function useGeneratedHeadline() {
-    if (!generatedCopy.headline.trim()) return;
-    updateForm("listingHeadline", generatedCopy.headline);
-  }
-
-  function useGeneratedPublicDescription() {
-    if (!generatedCopy.publicDescription.trim()) return;
-    updateForm("publicDescription", generatedCopy.publicDescription);
-  }
-
-  function useGeneratedMlsRemarks() {
-    if (!generatedCopy.mlsRemarks.trim()) return;
-    updateForm("mlsDescriptionDraft", generatedCopy.mlsRemarks);
   }
 
   if (loading) {
@@ -444,85 +354,6 @@ export default function ListHomePage() {
               <SummaryTile
                 label="Offer deadline"
                 value={form.offerDeadline || "No deadline set"}
-              />
-            </div>
-          </Card>
-
-          <Card>
-            <SectionHeading
-              eyebrow="Generate My Listing Copy"
-              title="Let Ackret draft your first version"
-            />
-
-            <p
-              style={{
-                marginTop: 0,
-                marginBottom: "18px",
-                fontSize: "15px",
-                lineHeight: 1.8,
-                color: "var(--ackret-muted)",
-              }}
-            >
-              Ackret can turn the information you’ve entered into a polished
-              headline, listing description, MLS-style remarks, and a short
-              social post. Review and edit everything before publishing.
-            </p>
-
-            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "20px" }}>
-              <button
-                type="button"
-                onClick={handleGenerateCopy}
-                style={primaryButtonInlineStyle}
-                disabled={isGenerating || saving}
-              >
-                {isGenerating ? "Generating..." : "Generate Listing Draft"}
-              </button>
-
-              <button
-                type="button"
-                onClick={handleGenerateCopy}
-                style={secondaryInlineButtonStyle}
-                disabled={isGenerating || saving}
-              >
-                Regenerate
-              </button>
-            </div>
-
-            <div style={{ display: "grid", gap: "18px" }}>
-              <GeneratedCopyBox
-                label="Generated Headline"
-                value={generatedCopy.headline}
-                onChange={(value) => updateGeneratedCopy("headline", value)}
-                rows={2}
-                buttonLabel="Use Headline"
-                onUse={useGeneratedHeadline}
-              />
-
-              <GeneratedCopyBox
-                label="Generated Public Description"
-                value={generatedCopy.publicDescription}
-                onChange={(value) =>
-                  updateGeneratedCopy("publicDescription", value)
-                }
-                rows={7}
-                buttonLabel="Use Public Description"
-                onUse={useGeneratedPublicDescription}
-              />
-
-              <GeneratedCopyBox
-                label="Generated MLS Remarks"
-                value={generatedCopy.mlsRemarks}
-                onChange={(value) => updateGeneratedCopy("mlsRemarks", value)}
-                rows={6}
-                buttonLabel="Use MLS Remarks"
-                onUse={useGeneratedMlsRemarks}
-              />
-
-              <GeneratedCopyBox
-                label="Generated Social Post"
-                value={generatedCopy.socialPost}
-                onChange={(value) => updateGeneratedCopy("socialPost", value)}
-                rows={4}
               />
             </div>
           </Card>
@@ -821,7 +652,6 @@ export default function ListHomePage() {
             <StatRow label="Description drafted" value={descriptionReady ? "Yes" : "No"} />
             <StatRow label="Showing plan" value={showingReady ? "Ready" : "Not ready"} />
             <StatRow label="List date" value={form.listDate || "Not set"} />
-            <StatRow label="Generated copy" value={generatedCopy.headline ? "Ready" : "Not generated"} />
             <StatRow label="Save status" value={saving ? "Saving..." : localSaveMessage} />
             <StatRow
               label="Draft status"
@@ -890,73 +720,6 @@ export default function ListHomePage() {
   );
 }
 
-function GeneratedCopyBox({
-  label,
-  value,
-  onChange,
-  rows,
-  buttonLabel,
-  onUse,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  rows: number;
-  buttonLabel?: string;
-  onUse?: () => void;
-}) {
-  return (
-    <div
-      style={{
-        border: "1px solid rgba(22,58,112,0.10)",
-        borderRadius: "18px",
-        padding: "18px",
-        background: "#fbfbf9",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: "12px",
-          alignItems: "center",
-          marginBottom: "12px",
-          flexWrap: "wrap",
-        }}
-      >
-        <div
-          style={{
-            fontSize: "12px",
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-            color: "var(--ackret-gold-dark)",
-          }}
-        >
-          {label}
-        </div>
-
-        {buttonLabel && onUse ? (
-          <button
-            type="button"
-            onClick={onUse}
-            style={smallGhostButtonStyle}
-          >
-            {buttonLabel}
-          </button>
-        ) : null}
-      </div>
-
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        rows={rows}
-        style={textareaStyle}
-        placeholder="Generate a draft to populate this section."
-      />
-    </div>
-  );
-}
-
 function showingModeLabel(value: ShowingMode): string {
   if (value === "open-house") return "Open houses only";
   if (value === "appointment") return "By appointment";
@@ -969,188 +732,6 @@ function occupancyLabel(value: ListingReadinessState["occupancyStatus"]): string
   if (value === "vacant") return "Vacant";
   if (value === "tenant-occupied") return "Tenant occupied";
   return "Not set";
-}
-
-function buildGeneratedListingCopy({
-  listHomeForm,
-  setPriceForm,
-  marketingForm,
-}: {
-  listHomeForm: ListingReadinessState;
-  setPriceForm: Record<string, unknown>;
-  marketingForm: Record<string, unknown>;
-}): GeneratedListingCopy {
-  const subjectBeds = cleanString(setPriceForm.subjectBeds);
-  const subjectBaths = cleanString(setPriceForm.subjectBaths);
-  const subjectSqft = cleanString(setPriceForm.subjectSqft);
-  const subjectCondition = cleanString(setPriceForm.subjectCondition);
-  const upgrades = cleanString(setPriceForm.upgrades);
-  const defects = cleanString(setPriceForm.defects);
-  const finalListPrice = cleanString(setPriceForm.finalListPrice);
-  const propertyHighlights =
-    cleanString(marketingForm.propertyHighlights) || cleanString(listHomeForm.privateNotes);
-  const idealBuyer = cleanString(marketingForm.idealBuyer);
-  const neighborhoodHighlights = cleanString(marketingForm.neighborhoodHighlights);
-
-  const occupancy = occupancyLabel(listHomeForm.occupancyStatus);
-  const showing = showingModeLabel(listHomeForm.showingMode);
-
-  const homeFacts = compactJoin([
-    subjectBeds ? `${subjectBeds}-bedroom` : "",
-    subjectBaths ? `${subjectBaths}-bath` : "",
-    subjectSqft ? `${subjectSqft} sq ft` : "",
-  ]);
-
-  const headlineParts = [
-    cleanHeadlinePiece(listHomeForm.listingHeadline),
-    cleanHeadlinePiece(propertyHighlights?.split(".")[0] || ""),
-    cleanHeadlinePiece(neighborhoodHighlights?.split(".")[0] || ""),
-  ].filter(Boolean);
-
-  const generatedHeadline =
-    headlineParts[0] ||
-    compactJoin([
-      homeFacts,
-      subjectCondition ? conditionLabel(subjectCondition) : "",
-      "home",
-    ]) ||
-    "Well-prepared Wisconsin home ready to list";
-
-  const publicParagraphs: string[] = [];
-
-  publicParagraphs.push(
-    sentenceJoin([
-      "This home offers",
-      homeFacts || "a strong overall layout",
-      subjectCondition ? `with a ${conditionLabel(subjectCondition).toLowerCase()} feel` : "",
-      finalListPrice ? `and is positioned at ${formatCurrencyString(finalListPrice)}` : "",
-    ])
-  );
-
-  if (propertyHighlights) {
-    publicParagraphs.push(
-      sentenceJoin([
-        "Standout features include",
-        propertyHighlights,
-      ])
-    );
-  }
-
-  if (upgrades) {
-    publicParagraphs.push(
-      sentenceJoin([
-        "Recent updates or value-add features include",
-        upgrades,
-      ])
-    );
-  }
-
-  if (neighborhoodHighlights) {
-    publicParagraphs.push(
-      sentenceJoin([
-        "The location also offers",
-        neighborhoodHighlights,
-      ])
-    );
-  }
-
-  if (idealBuyer) {
-    publicParagraphs.push(
-      sentenceJoin([
-        "This property may especially appeal to buyers looking for",
-        idealBuyer,
-      ])
-    );
-  }
-
-  publicParagraphs.push(
-    sentenceJoin([
-      "Showings are planned as",
-      showing.toLowerCase(),
-      listHomeForm.showingInstructions ? `with notes including ${listHomeForm.showingInstructions}` : "",
-    ])
-  );
-
-  if (listHomeForm.inclusions) {
-    publicParagraphs.push(
-      sentenceJoin([
-        "Included with the sale",
-        listHomeForm.inclusions,
-      ])
-    );
-  }
-
-  const publicDescription = publicParagraphs
-    .filter(Boolean)
-    .map(ensureSentence)
-    .join(" ");
-
-  const mlsBits = [
-    homeFacts,
-    subjectCondition ? conditionLabel(subjectCondition) : "",
-    propertyHighlights,
-    upgrades ? `Updates include ${upgrades}` : "",
-    neighborhoodHighlights ? `Nearby highlights: ${neighborhoodHighlights}` : "",
-    listHomeForm.inclusions ? `Included: ${listHomeForm.inclusions}` : "",
-    listHomeForm.exclusions ? `Exclusions: ${listHomeForm.exclusions}` : "",
-    finalListPrice ? `List price target: ${formatCurrencyString(finalListPrice)}` : "",
-  ].filter(Boolean);
-
-  const mlsRemarks = ensureSentence(
-    mlsBits.join(". ").replace(/\.\./g, ".")
-  );
-
-  const socialPost = ensureSentence(
-    compactJoin([
-      generatedHeadline,
-      finalListPrice ? `Offered at ${formatCurrencyString(finalListPrice)}.` : "",
-      propertyHighlights ? `${propertyHighlights}.` : "",
-      neighborhoodHighlights ? `${neighborhoodHighlights}.` : "",
-      listHomeForm.listDate ? `Planned to hit the market ${listHomeForm.listDate}.` : "",
-    ])
-  );
-
-  return {
-    headline: generatedHeadline,
-    publicDescription,
-    mlsRemarks,
-    socialPost,
-  };
-}
-
-function cleanString(value: unknown): string {
-  if (typeof value !== "string") return "";
-  return value.trim();
-}
-
-function compactJoin(parts: string[]) {
-  return parts.filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
-}
-
-function sentenceJoin(parts: string[]) {
-  return parts
-    .filter(Boolean)
-    .join(" ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function ensureSentence(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) return "";
-  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
-}
-
-function cleanHeadlinePiece(value: string) {
-  return value.replace(/\.+$/, "").trim();
-}
-
-function conditionLabel(value: string) {
-  if (value === "needs-work") return "Needs-work";
-  if (value === "average") return "Well-kept";
-  if (value === "updated") return "Updated";
-  if (value === "fully-renovated") return "Fully renovated";
-  return "";
 }
 
 function Card({ children }: { children: React.ReactNode }) {
@@ -1415,20 +996,6 @@ function StatRow({
   );
 }
 
-function formatCurrencyString(value: string): string {
-  const cleaned = value.replace(/[^0-9.]/g, "").trim();
-  if (!cleaned) return value;
-
-  const parsed = Number(cleaned);
-  if (!Number.isFinite(parsed)) return value;
-
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(parsed);
-}
-
 const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "14px 16px",
@@ -1468,19 +1035,6 @@ const primaryButtonStyle: React.CSSProperties = {
   boxShadow: "var(--ackret-shadow)",
 };
 
-const primaryButtonInlineStyle: React.CSSProperties = {
-  border: "none",
-  borderRadius: "999px",
-  padding: "12px 18px",
-  background: "var(--ackret-navy)",
-  color: "#ffffff",
-  fontSize: "13px",
-  letterSpacing: "0.14em",
-  textTransform: "uppercase",
-  cursor: "pointer",
-  boxShadow: "var(--ackret-shadow)",
-};
-
 const secondaryActionButtonStyle: React.CSSProperties = {
   width: "100%",
   borderRadius: "999px",
@@ -1496,19 +1050,6 @@ const secondaryActionButtonStyle: React.CSSProperties = {
   textAlign: "center",
 };
 
-const secondaryInlineButtonStyle: React.CSSProperties = {
-  borderRadius: "999px",
-  padding: "12px 18px",
-  background: "#ffffff",
-  color: "var(--ackret-navy)",
-  border: "1px solid rgba(22,58,112,0.15)",
-  fontSize: "13px",
-  letterSpacing: "0.14em",
-  textTransform: "uppercase",
-  cursor: "pointer",
-  boxSizing: "border-box",
-};
-
 const secondaryButtonButtonStyle: React.CSSProperties = {
   width: "100%",
   borderRadius: "999px",
@@ -1521,17 +1062,5 @@ const secondaryButtonButtonStyle: React.CSSProperties = {
   textTransform: "uppercase",
   textAlign: "center",
   boxSizing: "border-box",
-  cursor: "pointer",
-};
-
-const smallGhostButtonStyle: React.CSSProperties = {
-  borderRadius: "999px",
-  padding: "8px 12px",
-  background: "transparent",
-  color: "var(--ackret-muted)",
-  border: "1px solid rgba(22,58,112,0.12)",
-  fontSize: "11px",
-  letterSpacing: "0.1em",
-  textTransform: "uppercase",
   cursor: "pointer",
 };

@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { conditionReportQuestions } from "@/lib/conditionReportQuestions";
 import { dashboardSteps } from "@/lib/dashboardSteps";
+import { useSellerProfile } from "@/hooks/useSellerProfile";
 
 type AnswerValue = "yes" | "no" | "na" | "";
 
@@ -33,39 +35,48 @@ type FormState = {
 
 const groupedSections = groupQuestionsBySection(conditionReportQuestions);
 
-export default function ConditionReportPage() {
-  const [form, setForm] = useState<FormState>({
-    propertyAddress: "",
-    municipalityType: "",
-    municipalityName: "",
-    county: "",
-    reportDate: "",
-    owner1: "",
-    owner2: "",
-    owner3: "",
-    yearsOwned: "",
-    yearsOccupied: "",
-    occupantType: "",
-    builtBefore1978: "",
-    notes: "",
-  });
+function createInitialAnswers(): AnswersState {
+  const initial: AnswersState = {};
+  for (const question of conditionReportQuestions) {
+    initial[question.id] = {
+      answer: "",
+      explanation: "",
+    };
+  }
+  return initial;
+}
 
-  const [answers, setAnswers] = useState<AnswersState>(() => {
-    const initial: AnswersState = {};
-    for (const question of conditionReportQuestions) {
-      initial[question.id] = {
-        answer: "",
-        explanation: "",
-      };
-    }
-    return initial;
-  });
+const initialFormState: FormState = {
+  propertyAddress: "",
+  municipalityType: "",
+  municipalityName: "",
+  county: "",
+  reportDate: "",
+  owner1: "",
+  owner2: "",
+  owner3: "",
+  yearsOwned: "",
+  yearsOccupied: "",
+  occupantType: "",
+  builtBefore1978: "",
+  notes: "",
+};
+
+export default function ConditionReportPage() {
+  const router = useRouter();
+  const { profile, loading, saving, error, saveProfile } = useSellerProfile();
+
+  const [form, setForm] = useState<FormState>(initialFormState);
+
+  const [answers, setAnswers] = useState<AnswersState>(() => createInitialAnswers());
 
   const [draftId, setDraftId] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isWorking, setIsWorking] = useState(false);
   const [openSection, setOpenSection] = useState<string>(
     groupedSections[0]?.[0] ?? ""
   );
+  const [localSaveMessage, setLocalSaveMessage] = useState("Loading...");
+  const hasLoadedProfileRef = useRef(false);
 
   const yesCount = useMemo(() => {
     return Object.values(answers).filter((item) => item.answer === "yes").length;
@@ -103,6 +114,7 @@ export default function ConditionReportPage() {
       ...prev,
       [key]: value,
     }));
+    setLocalSaveMessage("Saving...");
   }
 
   function updateAnswer(questionId: string, value: AnswerValue) {
@@ -114,6 +126,7 @@ export default function ConditionReportPage() {
         explanation: value === "yes" ? prev[questionId].explanation : "",
       },
     }));
+    setLocalSaveMessage("Saving...");
   }
 
   function updateExplanation(questionId: string, value: string) {
@@ -124,11 +137,68 @@ export default function ConditionReportPage() {
         explanation: value,
       },
     }));
+    setLocalSaveMessage("Saving...");
   }
+
+  useEffect(() => {
+    if (!profile || hasLoadedProfileRef.current) return;
+
+    const saved = profile.progress?.conditionReport;
+
+    if (saved) {
+      setForm({
+        ...initialFormState,
+        ...(saved.form || {}),
+      });
+
+      const mergedAnswers = createInitialAnswers();
+      const savedAnswers = saved.answers || {};
+
+      for (const question of conditionReportQuestions) {
+        if (savedAnswers[question.id]) {
+          mergedAnswers[question.id] = {
+            answer: savedAnswers[question.id].answer ?? "",
+            explanation: savedAnswers[question.id].explanation ?? "",
+          };
+        }
+      }
+
+      setAnswers(mergedAnswers);
+      setDraftId(saved.draftId ?? null);
+      if (saved.openSection) {
+        setOpenSection(saved.openSection);
+      }
+    }
+
+    hasLoadedProfileRef.current = true;
+    setLocalSaveMessage("Saved");
+  }, [profile]);
+
+  useEffect(() => {
+    if (!hasLoadedProfileRef.current) return;
+
+    const timeout = setTimeout(async () => {
+      const result = await saveProfile({
+        currentStep: "condition-report",
+        progressPatch: {
+          conditionReport: {
+            form,
+            answers,
+            draftId,
+            openSection,
+          },
+        },
+      });
+
+      setLocalSaveMessage(result ? "Saved" : "Save failed");
+    }, 800);
+
+    return () => clearTimeout(timeout);
+  }, [form, answers, draftId, openSection]);
 
   async function handleSaveDraft() {
     try {
-      setIsSaving(true);
+      setIsWorking(true);
 
       const response = await fetch("/api/condition-report", {
         method: "POST",
@@ -149,45 +219,103 @@ export default function ConditionReportPage() {
       }
 
       setDraftId(data.id);
+
+      const result = await saveProfile({
+        currentStep: "condition-report",
+        progressPatch: {
+          conditionReport: {
+            form,
+            answers,
+            draftId: data.id,
+            openSection,
+          },
+        },
+      });
+
+      setLocalSaveMessage(result ? "Saved" : "Save failed");
       alert("Draft saved.");
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
       alert("Unable to save draft.");
     } finally {
-      setIsSaving(false);
+      setIsWorking(false);
     }
   }
 
   async function handleDownloadPdf() {
-  try {
-    setIsSaving(true);
+    try {
+      setIsWorking(true);
 
-    const response = await fetch("/api/condition-report/generate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        form,
-        answers,
-      }),
-    });
+      const response = await fetch("/api/condition-report/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          form,
+          answers,
+        }),
+      });
 
-    if (!response.ok) {
-      const data = await response.json().catch(() => null);
-      throw new Error(data?.error || "Failed to generate PDF.");
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error || "Failed to generate PDF.");
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    } catch (err) {
+      console.error(err);
+      alert("Unable to generate PDF.");
+    } finally {
+      setIsWorking(false);
     }
-
-    const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
-    window.open(url, "_blank");
-  } catch (error) {
-    console.error(error);
-    alert("Unable to generate PDF.");
-  } finally {
-    setIsSaving(false);
   }
-}
+
+  async function handleContinue() {
+    try {
+      setIsWorking(true);
+
+      const nextSlug = nextStep.href.replace("/dashboard/", "");
+
+      const result = await saveProfile({
+        currentStep: nextSlug,
+        progressPatch: {
+          conditionReport: {
+            form,
+            answers,
+            draftId,
+            openSection,
+          },
+        },
+      });
+
+      if (!result) {
+        setLocalSaveMessage("Save failed");
+        alert("Unable to save your progress before continuing.");
+        return;
+      }
+
+      setLocalSaveMessage("Saved");
+      router.push(nextStep.href);
+    } catch (err) {
+      console.error(err);
+      alert("Unable to continue right now.");
+    } finally {
+      setIsWorking(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div style={{ maxWidth: "1180px", paddingTop: "24px" }}>
+        <p style={{ color: "var(--ackret-muted)", fontSize: "16px" }}>
+          Loading your condition report...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: "1180px" }}>
@@ -252,7 +380,10 @@ export default function ConditionReportPage() {
                   <button
                     key={section.sectionName}
                     type="button"
-                    onClick={() => setOpenSection(section.sectionName)}
+                    onClick={() => {
+                      setOpenSection(section.sectionName);
+                      setLocalSaveMessage("Saving...");
+                    }}
                     style={{
                       textAlign: "left",
                       borderRadius: "16px",
@@ -463,7 +594,10 @@ export default function ConditionReportPage() {
               <Card key={sectionName}>
                 <button
                   type="button"
-                  onClick={() => setOpenSection(sectionName)}
+                  onClick={() => {
+                    setOpenSection(sectionName);
+                    setLocalSaveMessage("Saving...");
+                  }}
                   style={{
                     width: "100%",
                     background: "transparent",
@@ -697,6 +831,10 @@ export default function ConditionReportPage() {
               }
             />
             <StatRow
+              label="Save status"
+              value={saving ? "Saving..." : localSaveMessage}
+            />
+            <StatRow
               label="Draft status"
               value={draftId ? "Saved" : "Not saved yet"}
               last
@@ -714,38 +852,61 @@ export default function ConditionReportPage() {
                 type="button"
                 onClick={handleSaveDraft}
                 style={primaryButtonStyle}
-                disabled={isSaving}
+                disabled={isWorking || saving}
               >
-                {isSaving ? "Saving..." : "Save Draft"}
+                {isWorking ? "Saving..." : "Save Draft"}
               </button>
 
               <button
                 type="button"
                 onClick={handleDownloadPdf}
                 style={secondaryActionButtonStyle}
-                disabled={isSaving}
+                disabled={isWorking || saving}
               >
-                {isSaving ? "Working..." : "Save and Download PDF"}
+                {isWorking ? "Working..." : "Save and Download PDF"}
               </button>
 
-              <Link href={nextStep.href} style={{ textDecoration: "none" }}>
-                <div style={secondaryButtonStyle}>Continue to Next Step</div>
-              </Link>
+              <button
+                type="button"
+                onClick={handleContinue}
+                style={secondaryButtonButtonStyle}
+                disabled={isWorking || saving}
+              >
+                Continue to Next Step
+              </button>
             </div>
 
-            <p
-              style={{
-                marginTop: "14px",
-                marginBottom: 0,
-                fontSize: "13px",
-                lineHeight: 1.7,
-                color: "var(--ackret-muted)",
-              }}
-            >
-              The layout is section-based so the full Wisconsin report stays
-              manageable even with the complete official question set.
-            </p>
+            {error ? (
+              <p
+                style={{
+                  marginTop: "14px",
+                  marginBottom: 0,
+                  fontSize: "13px",
+                  lineHeight: 1.7,
+                  color: "#b42318",
+                }}
+              >
+                {error}
+              </p>
+            ) : (
+              <p
+                style={{
+                  marginTop: "14px",
+                  marginBottom: 0,
+                  fontSize: "13px",
+                  lineHeight: 1.7,
+                  color: "var(--ackret-muted)",
+                }}
+              >
+                The layout is section-based so the full Wisconsin report stays
+                manageable even with the complete official question set.
+              </p>
+            )}
           </Card>
+
+          <div style={{ display: "none" }}>
+            <Link href={nextStep.href}>Next</Link>
+          </div>
         </div>
       </div>
     </div>
@@ -999,7 +1160,7 @@ const secondaryActionButtonStyle: React.CSSProperties = {
   boxSizing: "border-box",
 };
 
-const secondaryButtonStyle: React.CSSProperties = {
+const secondaryButtonButtonStyle: React.CSSProperties = {
   width: "100%",
   borderRadius: "999px",
   padding: "16px 20px",
@@ -1011,4 +1172,5 @@ const secondaryButtonStyle: React.CSSProperties = {
   textTransform: "uppercase",
   textAlign: "center",
   boxSizing: "border-box",
+  cursor: "pointer",
 };

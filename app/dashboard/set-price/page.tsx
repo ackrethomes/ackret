@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { dashboardSteps } from "@/lib/dashboardSteps";
+import { useSellerProfile } from "@/hooks/useSellerProfile";
 
 type PricingStrategy = "fast" | "balanced" | "max_price" | "";
 
@@ -59,35 +61,44 @@ function createBlankComp(id: string): CompEntry {
   };
 }
 
+const initialFormState: SetPriceFormState = {
+  strategy: "",
+  desiredTimeline: "",
+  needQuickSale: "",
+  priceAggressively: "",
+  subjectSqft: "",
+  subjectBeds: "",
+  subjectBaths: "",
+  subjectYearBuilt: "",
+  subjectCondition: "",
+  upgrades: "",
+  defects: "",
+  suggestedMinPrice: "",
+  suggestedMaxPrice: "",
+  suggestedListPrice: "",
+  finalListPrice: "",
+  minimumAcceptablePrice: "",
+  pricingNotes: "",
+};
+
+const initialCompsState: CompEntry[] = [
+  createBlankComp("comp-1"),
+  createBlankComp("comp-2"),
+  createBlankComp("comp-3"),
+];
+
 export default function SetPricePage() {
+  const router = useRouter();
+  const { profile, loading, saving, error, saveProfile } = useSellerProfile();
+
   const [draftId, setDraftId] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isWorking, setIsWorking] = useState(false);
+  const [localSaveMessage, setLocalSaveMessage] = useState("Loading...");
+  const hasLoadedProfileRef = useRef(false);
 
-  const [form, setForm] = useState<SetPriceFormState>({
-    strategy: "",
-    desiredTimeline: "",
-    needQuickSale: "",
-    priceAggressively: "",
-    subjectSqft: "",
-    subjectBeds: "",
-    subjectBaths: "",
-    subjectYearBuilt: "",
-    subjectCondition: "",
-    upgrades: "",
-    defects: "",
-    suggestedMinPrice: "",
-    suggestedMaxPrice: "",
-    suggestedListPrice: "",
-    finalListPrice: "",
-    minimumAcceptablePrice: "",
-    pricingNotes: "",
-  });
+  const [form, setForm] = useState<SetPriceFormState>(initialFormState);
 
-  const [comps, setComps] = useState<CompEntry[]>([
-    createBlankComp("comp-1"),
-    createBlankComp("comp-2"),
-    createBlankComp("comp-3"),
-  ]);
+  const [comps, setComps] = useState<CompEntry[]>(initialCompsState);
 
   const previousStep = dashboardSteps[1];
   const nextStep = dashboardSteps[3];
@@ -100,6 +111,7 @@ export default function SetPricePage() {
       ...prev,
       [key]: value,
     }));
+    setLocalSaveMessage("Saving...");
   }
 
   function updateComp(
@@ -117,10 +129,12 @@ export default function SetPricePage() {
           : comp
       )
     );
+    setLocalSaveMessage("Saving...");
   }
 
   function addComp() {
     setComps((prev) => [...prev, createBlankComp(`comp-${Date.now()}`)]);
+    setLocalSaveMessage("Saving...");
   }
 
   function removeComp(compId: string) {
@@ -128,7 +142,51 @@ export default function SetPricePage() {
       if (prev.length <= 1) return prev;
       return prev.filter((comp) => comp.id !== compId);
     });
+    setLocalSaveMessage("Saving...");
   }
+
+  useEffect(() => {
+    if (!profile || hasLoadedProfileRef.current) return;
+
+    const saved = profile.progress?.setPrice;
+
+    if (saved) {
+      setForm({
+        ...initialFormState,
+        ...(saved.form || {}),
+      });
+
+      if (Array.isArray(saved.comps) && saved.comps.length > 0) {
+        setComps(saved.comps);
+      }
+
+      setDraftId(saved.draftId ?? null);
+    }
+
+    hasLoadedProfileRef.current = true;
+    setLocalSaveMessage("Saved");
+  }, [profile]);
+
+  useEffect(() => {
+    if (!hasLoadedProfileRef.current) return;
+
+    const timeout = setTimeout(async () => {
+      const result = await saveProfile({
+        currentStep: "set-price",
+        progressPatch: {
+          setPrice: {
+            form,
+            comps,
+            draftId,
+          },
+        },
+      });
+
+      setLocalSaveMessage(result ? "Saved" : "Save failed");
+    }, 800);
+
+    return () => clearTimeout(timeout);
+  }, [form, comps, draftId]);
 
   const filledComps = useMemo(() => {
     return comps.filter(
@@ -193,22 +251,75 @@ export default function SetPricePage() {
 
   async function handleSaveDraft() {
     try {
-      setIsSaving(true);
+      setIsWorking(true);
 
-      // Placeholder save flow so the page feels complete while the rest of the workflow is built.
       await new Promise((resolve) => setTimeout(resolve, 600));
 
-      if (!draftId) {
-        setDraftId(`set-price-${Date.now()}`);
-      }
+      const nextDraftId = draftId || `set-price-${Date.now()}`;
+      setDraftId(nextDraftId);
 
+      const result = await saveProfile({
+        currentStep: "set-price",
+        progressPatch: {
+          setPrice: {
+            form,
+            comps,
+            draftId: nextDraftId,
+          },
+        },
+      });
+
+      setLocalSaveMessage(result ? "Saved" : "Save failed");
       alert("Pricing draft saved.");
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
       alert("Unable to save pricing draft.");
     } finally {
-      setIsSaving(false);
+      setIsWorking(false);
     }
+  }
+
+  async function handleContinue() {
+    try {
+      setIsWorking(true);
+
+      const nextSlug = nextStep.href.replace("/dashboard/", "");
+
+      const result = await saveProfile({
+        currentStep: nextSlug,
+        progressPatch: {
+          setPrice: {
+            form,
+            comps,
+            draftId,
+          },
+        },
+      });
+
+      if (!result) {
+        setLocalSaveMessage("Save failed");
+        alert("Unable to save your progress before continuing.");
+        return;
+      }
+
+      setLocalSaveMessage("Saved");
+      router.push(nextStep.href);
+    } catch (err) {
+      console.error(err);
+      alert("Unable to continue right now.");
+    } finally {
+      setIsWorking(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div style={{ maxWidth: "1180px", paddingTop: "24px" }}>
+        <p style={{ color: "var(--ackret-muted)", fontSize: "16px" }}>
+          Loading your pricing step...
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -676,6 +787,10 @@ export default function SetPricePage() {
             <StatRow label="Suggested range" value={summarySuggestedRange} />
             <StatRow label="Final list price" value={finalListPriceDisplay} />
             <StatRow
+              label="Save status"
+              value={saving ? "Saving..." : localSaveMessage}
+            />
+            <StatRow
               label="Draft status"
               value={draftId ? "Saved" : "Not saved yet"}
               last
@@ -690,32 +805,51 @@ export default function SetPricePage() {
                 type="button"
                 onClick={handleSaveDraft}
                 style={primaryButtonStyle}
-                disabled={isSaving}
+                disabled={isWorking || saving}
               >
-                {isSaving ? "Saving..." : "Save Draft"}
+                {isWorking ? "Saving..." : "Save Draft"}
               </button>
 
-              <Link href={nextStep.href} style={{ textDecoration: "none" }}>
-                <div style={secondaryButtonStyle}>Continue to Next Step</div>
-              </Link>
+              <button
+                type="button"
+                onClick={handleContinue}
+                style={secondaryButtonButtonStyle}
+                disabled={isWorking || saving}
+              >
+                Continue to Next Step
+              </button>
 
               <Link href={previousStep.href} style={{ textDecoration: "none" }}>
                 <div style={secondaryActionButtonStyle}>Previous Step</div>
               </Link>
             </div>
 
-            <p
-              style={{
-                marginTop: "14px",
-                marginBottom: 0,
-                fontSize: "13px",
-                lineHeight: 1.7,
-                color: "var(--ackret-muted)",
-              }}
-            >
-              Save your reasoning here so your list price is backed by actual
-              comps and a consistent strategy before you move into listing.
-            </p>
+            {error ? (
+              <p
+                style={{
+                  marginTop: "14px",
+                  marginBottom: 0,
+                  fontSize: "13px",
+                  lineHeight: 1.7,
+                  color: "#b42318",
+                }}
+              >
+                {error}
+              </p>
+            ) : (
+              <p
+                style={{
+                  marginTop: "14px",
+                  marginBottom: 0,
+                  fontSize: "13px",
+                  lineHeight: 1.7,
+                  color: "var(--ackret-muted)",
+                }}
+              >
+                Save your reasoning here so your list price is backed by actual
+                comps and a consistent strategy before you move into listing.
+              </p>
+            )}
           </Card>
         </div>
       </div>
@@ -1069,7 +1203,7 @@ const secondaryActionButtonStyle: React.CSSProperties = {
   textAlign: "center",
 };
 
-const secondaryButtonStyle: React.CSSProperties = {
+const secondaryButtonButtonStyle: React.CSSProperties = {
   width: "100%",
   borderRadius: "999px",
   padding: "16px 20px",
@@ -1081,6 +1215,7 @@ const secondaryButtonStyle: React.CSSProperties = {
   textTransform: "uppercase",
   textAlign: "center",
   boxSizing: "border-box",
+  cursor: "pointer",
 };
 
 const smallGhostButtonStyle: React.CSSProperties = {

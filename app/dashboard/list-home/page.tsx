@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { dashboardSteps } from "@/lib/dashboardSteps";
+import { useSellerProfile } from "@/hooks/useSellerProfile";
 
 type ShowingMode = "open-house" | "appointment" | "flexible" | "";
 
@@ -35,36 +37,52 @@ type ListingChannel = {
 
 const initialChannels: ListingChannel[] = [
   { id: "mls", label: "MLS listing service", planned: true, notes: "" },
-  { id: "zillow", label: "Zillow / Homes.com / consumer portals", planned: true, notes: "" },
-  { id: "facebook", label: "Facebook Marketplace / local groups", planned: false, notes: "" },
+  {
+    id: "zillow",
+    label: "Zillow / Homes.com / consumer portals",
+    planned: true,
+    notes: "",
+  },
+  {
+    id: "facebook",
+    label: "Facebook Marketplace / local groups",
+    planned: false,
+    notes: "",
+  },
   { id: "yard-sign", label: "Yard sign + local traffic", planned: true, notes: "" },
   { id: "email", label: "Share by email / word of mouth", planned: false, notes: "" },
 ];
 
+const initialFormState: ListingReadinessState = {
+  listingHeadline: "",
+  publicDescription: "",
+  privateNotes: "",
+  mlsDescriptionDraft: "",
+  listDate: "",
+  showingMode: "",
+  showingInstructions: "",
+  occupancyStatus: "",
+  availableDate: "",
+  lockboxPlan: "",
+  yardSignPlan: "",
+  onlinePostingPlan: "",
+  buyerAgentCommissionPlan: "",
+  inclusions: "",
+  exclusions: "",
+  financingNotes: "",
+  offerDeadline: "",
+};
+
 export default function ListHomePage() {
+  const router = useRouter();
+  const { profile, loading, saving, error, saveProfile } = useSellerProfile();
+
   const [draftId, setDraftId] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isWorking, setIsWorking] = useState(false);
+  const [localSaveMessage, setLocalSaveMessage] = useState("Loading...");
+  const hasLoadedProfileRef = useRef(false);
 
-  const [form, setForm] = useState<ListingReadinessState>({
-    listingHeadline: "",
-    publicDescription: "",
-    privateNotes: "",
-    mlsDescriptionDraft: "",
-    listDate: "",
-    showingMode: "",
-    showingInstructions: "",
-    occupancyStatus: "",
-    availableDate: "",
-    lockboxPlan: "",
-    yardSignPlan: "",
-    onlinePostingPlan: "",
-    buyerAgentCommissionPlan: "",
-    inclusions: "",
-    exclusions: "",
-    financingNotes: "",
-    offerDeadline: "",
-  });
-
+  const [form, setForm] = useState<ListingReadinessState>(initialFormState);
   const [channels, setChannels] = useState<ListingChannel[]>(initialChannels);
 
   const previousStep = dashboardSteps[2];
@@ -78,6 +96,7 @@ export default function ListHomePage() {
       ...prev,
       [key]: value,
     }));
+    setLocalSaveMessage("Saving...");
   }
 
   function updateChannel(
@@ -95,7 +114,51 @@ export default function ListHomePage() {
           : channel
       )
     );
+    setLocalSaveMessage("Saving...");
   }
+
+  useEffect(() => {
+    if (!profile || hasLoadedProfileRef.current) return;
+
+    const saved = profile.progress?.listHome;
+
+    if (saved) {
+      setForm({
+        ...initialFormState,
+        ...(saved.form || {}),
+      });
+
+      if (Array.isArray(saved.channels) && saved.channels.length > 0) {
+        setChannels(saved.channels);
+      }
+
+      setDraftId(saved.draftId ?? null);
+    }
+
+    hasLoadedProfileRef.current = true;
+    setLocalSaveMessage("Saved");
+  }, [profile]);
+
+  useEffect(() => {
+    if (!hasLoadedProfileRef.current) return;
+
+    const timeout = setTimeout(async () => {
+      const result = await saveProfile({
+        currentStep: "list-home",
+        progressPatch: {
+          listHome: {
+            form,
+            channels,
+            draftId,
+          },
+        },
+      });
+
+      setLocalSaveMessage(result ? "Saved" : "Save failed");
+    }, 800);
+
+    return () => clearTimeout(timeout);
+  }, [form, channels, draftId]);
 
   const plannedChannelsCount = useMemo(
     () => channels.filter((channel) => channel.planned).length,
@@ -127,21 +190,75 @@ export default function ListHomePage() {
 
   async function handleSaveDraft() {
     try {
-      setIsSaving(true);
+      setIsWorking(true);
 
       await new Promise((resolve) => setTimeout(resolve, 600));
 
-      if (!draftId) {
-        setDraftId(`list-home-${Date.now()}`);
-      }
+      const nextDraftId = draftId || `list-home-${Date.now()}`;
+      setDraftId(nextDraftId);
 
+      const result = await saveProfile({
+        currentStep: "list-home",
+        progressPatch: {
+          listHome: {
+            form,
+            channels,
+            draftId: nextDraftId,
+          },
+        },
+      });
+
+      setLocalSaveMessage(result ? "Saved" : "Save failed");
       alert("Listing draft saved.");
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
       alert("Unable to save listing draft.");
     } finally {
-      setIsSaving(false);
+      setIsWorking(false);
     }
+  }
+
+  async function handleContinue() {
+    try {
+      setIsWorking(true);
+
+      const nextSlug = nextStep.href.replace("/dashboard/", "");
+
+      const result = await saveProfile({
+        currentStep: nextSlug,
+        progressPatch: {
+          listHome: {
+            form,
+            channels,
+            draftId,
+          },
+        },
+      });
+
+      if (!result) {
+        setLocalSaveMessage("Save failed");
+        alert("Unable to save your progress before continuing.");
+        return;
+      }
+
+      setLocalSaveMessage("Saved");
+      router.push(nextStep.href);
+    } catch (err) {
+      console.error(err);
+      alert("Unable to continue right now.");
+    } finally {
+      setIsWorking(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div style={{ maxWidth: "1180px", paddingTop: "24px" }}>
+        <p style={{ color: "var(--ackret-muted)", fontSize: "16px" }}>
+          Loading your listing step...
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -535,7 +652,12 @@ export default function ListHomePage() {
             <StatRow label="Description drafted" value={descriptionReady ? "Yes" : "No"} />
             <StatRow label="Showing plan" value={showingReady ? "Ready" : "Not ready"} />
             <StatRow label="List date" value={form.listDate || "Not set"} />
-            <StatRow label="Draft status" value={draftId ? "Saved" : "Not saved yet"} last />
+            <StatRow label="Save status" value={saving ? "Saving..." : localSaveMessage} />
+            <StatRow
+              label="Draft status"
+              value={draftId ? "Saved" : "Not saved yet"}
+              last
+            />
           </Card>
 
           <Card>
@@ -546,32 +668,51 @@ export default function ListHomePage() {
                 type="button"
                 onClick={handleSaveDraft}
                 style={primaryButtonStyle}
-                disabled={isSaving}
+                disabled={isWorking || saving}
               >
-                {isSaving ? "Saving..." : "Save Draft"}
+                {isWorking ? "Saving..." : "Save Draft"}
               </button>
 
-              <Link href={nextStep.href} style={{ textDecoration: "none" }}>
-                <div style={secondaryButtonStyle}>Continue to Next Step</div>
-              </Link>
+              <button
+                type="button"
+                onClick={handleContinue}
+                style={secondaryButtonButtonStyle}
+                disabled={isWorking || saving}
+              >
+                Continue to Next Step
+              </button>
 
               <Link href={previousStep.href} style={{ textDecoration: "none" }}>
                 <div style={secondaryActionButtonStyle}>Previous Step</div>
               </Link>
             </div>
 
-            <p
-              style={{
-                marginTop: "14px",
-                marginBottom: 0,
-                fontSize: "13px",
-                lineHeight: 1.7,
-                color: "var(--ackret-muted)",
-              }}
-            >
-              This step is about making your listing feel intentional before it
-              goes public — not just posting it quickly.
-            </p>
+            {error ? (
+              <p
+                style={{
+                  marginTop: "14px",
+                  marginBottom: 0,
+                  fontSize: "13px",
+                  lineHeight: 1.7,
+                  color: "#b42318",
+                }}
+              >
+                {error}
+              </p>
+            ) : (
+              <p
+                style={{
+                  marginTop: "14px",
+                  marginBottom: 0,
+                  fontSize: "13px",
+                  lineHeight: 1.7,
+                  color: "var(--ackret-muted)",
+                }}
+              >
+                This step is about making your listing feel intentional before it
+                goes public — not just posting it quickly.
+              </p>
+            )}
           </Card>
         </div>
       </div>
@@ -909,7 +1050,7 @@ const secondaryActionButtonStyle: React.CSSProperties = {
   textAlign: "center",
 };
 
-const secondaryButtonStyle: React.CSSProperties = {
+const secondaryButtonButtonStyle: React.CSSProperties = {
   width: "100%",
   borderRadius: "999px",
   padding: "16px 20px",
@@ -921,4 +1062,5 @@ const secondaryButtonStyle: React.CSSProperties = {
   textTransform: "uppercase",
   textAlign: "center",
   boxSizing: "border-box",
+  cursor: "pointer",
 };

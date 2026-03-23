@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { dashboardSteps } from "@/lib/dashboardSteps";
+import { useSellerProfile } from "@/hooks/useSellerProfile";
 
 type InspectionStatus =
   | "not-scheduled"
@@ -50,30 +52,38 @@ function createBlankIssue(id: string): InspectionIssue {
   };
 }
 
+const initialFormState: InspectionFormState = {
+  inspectionStatus: "not-scheduled",
+  inspectionDate: "",
+  inspectionWindow: "",
+  buyerInspectorName: "",
+  accessInstructions: "",
+  utilitiesReady: "",
+  repairPreferences: "",
+  creditPreferences: "",
+  repairDeadline: "",
+  contractorPlan: "",
+  reinspectionNeeded: "",
+  reinspectionDate: "",
+  finalInspectionNotes: "",
+};
+
+const initialIssuesState: InspectionIssue[] = [
+  createBlankIssue("issue-1"),
+  createBlankIssue("issue-2"),
+];
+
 export default function InspectionPage() {
+  const router = useRouter();
+  const { profile, loading, saving, error, saveProfile } = useSellerProfile();
+
   const [draftId, setDraftId] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isWorking, setIsWorking] = useState(false);
+  const [localSaveMessage, setLocalSaveMessage] = useState("Loading...");
+  const hasLoadedProfileRef = useRef(false);
 
-  const [form, setForm] = useState<InspectionFormState>({
-    inspectionStatus: "not-scheduled",
-    inspectionDate: "",
-    inspectionWindow: "",
-    buyerInspectorName: "",
-    accessInstructions: "",
-    utilitiesReady: "",
-    repairPreferences: "",
-    creditPreferences: "",
-    repairDeadline: "",
-    contractorPlan: "",
-    reinspectionNeeded: "",
-    reinspectionDate: "",
-    finalInspectionNotes: "",
-  });
-
-  const [issues, setIssues] = useState<InspectionIssue[]>([
-    createBlankIssue("issue-1"),
-    createBlankIssue("issue-2"),
-  ]);
+  const [form, setForm] = useState<InspectionFormState>(initialFormState);
+  const [issues, setIssues] = useState<InspectionIssue[]>(initialIssuesState);
 
   const previousStep = dashboardSteps[5];
   const nextStep = dashboardSteps[7];
@@ -86,6 +96,7 @@ export default function InspectionPage() {
       ...prev,
       [key]: value,
     }));
+    setLocalSaveMessage("Saving...");
   }
 
   function updateIssue(
@@ -103,10 +114,12 @@ export default function InspectionPage() {
           : issue
       )
     );
+    setLocalSaveMessage("Saving...");
   }
 
   function addIssue() {
     setIssues((prev) => [...prev, createBlankIssue(`issue-${Date.now()}`)]);
+    setLocalSaveMessage("Saving...");
   }
 
   function removeIssue(issueId: string) {
@@ -114,7 +127,51 @@ export default function InspectionPage() {
       if (prev.length <= 1) return prev;
       return prev.filter((issue) => issue.id !== issueId);
     });
+    setLocalSaveMessage("Saving...");
   }
+
+  useEffect(() => {
+    if (!profile || hasLoadedProfileRef.current) return;
+
+    const saved = profile.progress?.inspection;
+
+    if (saved) {
+      setForm({
+        ...initialFormState,
+        ...(saved.form || {}),
+      });
+
+      if (Array.isArray(saved.issues) && saved.issues.length > 0) {
+        setIssues(saved.issues);
+      }
+
+      setDraftId(saved.draftId ?? null);
+    }
+
+    hasLoadedProfileRef.current = true;
+    setLocalSaveMessage("Saved");
+  }, [profile]);
+
+  useEffect(() => {
+    if (!hasLoadedProfileRef.current) return;
+
+    const timeout = setTimeout(async () => {
+      const result = await saveProfile({
+        currentStep: "inspection",
+        progressPatch: {
+          inspection: {
+            form,
+            issues,
+            draftId,
+          },
+        },
+      });
+
+      setLocalSaveMessage(result ? "Saved" : "Save failed");
+    }, 800);
+
+    return () => clearTimeout(timeout);
+  }, [form, issues, draftId, saveProfile]);
 
   const enteredIssues = useMemo(() => {
     return issues.filter(
@@ -152,21 +209,75 @@ export default function InspectionPage() {
 
   async function handleSaveDraft() {
     try {
-      setIsSaving(true);
+      setIsWorking(true);
 
       await new Promise((resolve) => setTimeout(resolve, 600));
 
-      if (!draftId) {
-        setDraftId(`inspection-${Date.now()}`);
-      }
+      const nextDraftId = draftId || `inspection-${Date.now()}`;
+      setDraftId(nextDraftId);
 
+      const result = await saveProfile({
+        currentStep: "inspection",
+        progressPatch: {
+          inspection: {
+            form,
+            issues,
+            draftId: nextDraftId,
+          },
+        },
+      });
+
+      setLocalSaveMessage(result ? "Saved" : "Save failed");
       alert("Inspection draft saved.");
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
       alert("Unable to save inspection draft.");
     } finally {
-      setIsSaving(false);
+      setIsWorking(false);
     }
+  }
+
+  async function handleContinue() {
+    try {
+      setIsWorking(true);
+
+      const nextSlug = nextStep.href.replace("/dashboard/", "");
+
+      const result = await saveProfile({
+        currentStep: nextSlug,
+        progressPatch: {
+          inspection: {
+            form,
+            issues,
+            draftId,
+          },
+        },
+      });
+
+      if (!result) {
+        setLocalSaveMessage("Save failed");
+        alert("Unable to save your progress before continuing.");
+        return;
+      }
+
+      setLocalSaveMessage("Saved");
+      router.push(nextStep.href);
+    } catch (err) {
+      console.error(err);
+      alert("Unable to continue right now.");
+    } finally {
+      setIsWorking(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div style={{ maxWidth: "1180px", paddingTop: "24px" }}>
+        <p style={{ color: "var(--ackret-muted)", fontSize: "16px" }}>
+          Loading your inspection step...
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -266,8 +377,8 @@ export default function InspectionPage() {
                   form.reinspectionNeeded === "yes"
                     ? form.reinspectionDate || "Needed"
                     : form.reinspectionNeeded === "no"
-                    ? "Not needed"
-                    : "Not decided"
+                      ? "Not needed"
+                      : "Not decided"
                 }
               />
               <SummaryTile
@@ -580,6 +691,10 @@ export default function InspectionPage() {
             <StatRow label="Major issues" value={`${majorIssues}`} />
             <StatRow label="Unresolved items" value={`${unresolvedIssues}`} />
             <StatRow
+              label="Save status"
+              value={saving ? "Saving..." : localSaveMessage}
+            />
+            <StatRow
               label="Draft status"
               value={draftId ? "Saved" : "Not saved yet"}
               last
@@ -594,32 +709,51 @@ export default function InspectionPage() {
                 type="button"
                 onClick={handleSaveDraft}
                 style={primaryButtonStyle}
-                disabled={isSaving}
+                disabled={isWorking || saving}
               >
-                {isSaving ? "Saving..." : "Save Draft"}
+                {isWorking ? "Saving..." : "Save Draft"}
               </button>
 
-              <Link href={nextStep.href} style={{ textDecoration: "none" }}>
-                <div style={secondaryButtonStyle}>Continue to Next Step</div>
-              </Link>
+              <button
+                type="button"
+                onClick={handleContinue}
+                style={secondaryButtonButtonStyle}
+                disabled={isWorking || saving}
+              >
+                Continue to Next Step
+              </button>
 
               <Link href={previousStep.href} style={{ textDecoration: "none" }}>
                 <div style={secondaryActionButtonStyle}>Previous Step</div>
               </Link>
             </div>
 
-            <p
-              style={{
-                marginTop: "14px",
-                marginBottom: 0,
-                fontSize: "13px",
-                lineHeight: 1.7,
-                color: "var(--ackret-muted)",
-              }}
-            >
-              The goal here is to resolve inspection issues clearly and keep the
-              file organized before the closing step.
-            </p>
+            {error ? (
+              <p
+                style={{
+                  marginTop: "14px",
+                  marginBottom: 0,
+                  fontSize: "13px",
+                  lineHeight: 1.7,
+                  color: "#b42318",
+                }}
+              >
+                {error}
+              </p>
+            ) : (
+              <p
+                style={{
+                  marginTop: "14px",
+                  marginBottom: 0,
+                  fontSize: "13px",
+                  lineHeight: 1.7,
+                  color: "var(--ackret-muted)",
+                }}
+              >
+                The goal here is to resolve inspection issues clearly and keep the
+                file organized before the closing step.
+              </p>
+            )}
           </Card>
         </div>
       </div>
@@ -967,7 +1101,7 @@ const secondaryActionButtonStyle: React.CSSProperties = {
   textAlign: "center",
 };
 
-const secondaryButtonStyle: React.CSSProperties = {
+const secondaryButtonButtonStyle: React.CSSProperties = {
   width: "100%",
   borderRadius: "999px",
   padding: "16px 20px",
@@ -979,6 +1113,7 @@ const secondaryButtonStyle: React.CSSProperties = {
   textTransform: "uppercase",
   textAlign: "center",
   boxSizing: "border-box",
+  cursor: "pointer",
 };
 
 const smallGhostButtonStyle: React.CSSProperties = {

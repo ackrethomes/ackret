@@ -1,172 +1,222 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { dashboardSteps } from "@/lib/dashboardSteps";
+import { useSellerProfile } from "@/hooks/useSellerProfile";
 
-type InspectionStatus =
-  | "not-scheduled"
+type ClosingStatus =
+  | "not-started"
   | "scheduled"
-  | "completed"
-  | "resolved";
+  | "documents-in-progress"
+  | "clear-to-close"
+  | "closed";
 
-type InspectionIssue = {
+type ClosingTask = {
   id: string;
   title: string;
-  severity: "minor" | "moderate" | "major" | "";
-  requestedAction: string;
-  sellerResponse: "repair" | "credit" | "decline" | "undecided" | "";
-  estimatedCost: string;
-  agreedResolution: string;
+  status: "not-started" | "in-progress" | "complete";
   notes: string;
 };
 
-type InspectionFormState = {
-  inspectionStatus: InspectionStatus;
-  inspectionDate: string;
-  inspectionWindow: string;
-  buyerInspectorName: string;
-  accessInstructions: string;
-  utilitiesReady: "yes" | "no" | "";
-  repairPreferences: string;
-  creditPreferences: string;
-  repairDeadline: string;
-  contractorPlan: string;
-  reinspectionNeeded: "yes" | "no" | "";
-  reinspectionDate: string;
-  finalInspectionNotes: string;
+type ClosingFormState = {
+  closingStatus: ClosingStatus;
+  closingDate: string;
+  closingTime: string;
+  closingLocation: string;
+  titleCompany: string;
+  titleOfficer: string;
+  attorneyName: string;
+  buyerLender: string;
+  finalWalkthroughDate: string;
+  possessionDate: string;
+  utilitiesTransferPlan: string;
+  payoffNotes: string;
+  proceedsPlan: string;
+  keysGarageOpenersPlan: string;
+  documentsStillNeeded: string;
+  sellerClosingCostsEstimate: string;
+  finalQuestions: string;
+  closingNotes: string;
 };
 
-function createBlankIssue(id: string): InspectionIssue {
+function createBlankTask(id: string, title: string): ClosingTask {
   return {
     id,
-    title: "",
-    severity: "",
-    requestedAction: "",
-    sellerResponse: "",
-    estimatedCost: "",
-    agreedResolution: "",
+    title,
+    status: "not-started",
     notes: "",
   };
 }
 
-export default function InspectionPage() {
+const initialTasks: ClosingTask[] = [
+  createBlankTask("title", "Title work reviewed"),
+  createBlankTask("payoff", "Mortgage payoff confirmed"),
+  createBlankTask("utilities", "Utilities transfer planned"),
+  createBlankTask("walkthrough", "Final walkthrough scheduled"),
+  createBlankTask("keys", "Keys / garage openers ready"),
+  createBlankTask("closing-docs", "Closing documents reviewed"),
+];
+
+const initialFormState: ClosingFormState = {
+  closingStatus: "not-started",
+  closingDate: "",
+  closingTime: "",
+  closingLocation: "",
+  titleCompany: "",
+  titleOfficer: "",
+  attorneyName: "",
+  buyerLender: "",
+  finalWalkthroughDate: "",
+  possessionDate: "",
+  utilitiesTransferPlan: "",
+  payoffNotes: "",
+  proceedsPlan: "",
+  keysGarageOpenersPlan: "",
+  documentsStillNeeded: "",
+  sellerClosingCostsEstimate: "",
+  finalQuestions: "",
+  closingNotes: "",
+};
+
+export default function ClosingPage() {
+  const { profile, loading, saving, error, saveProfile } = useSellerProfile();
+
   const [draftId, setDraftId] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isWorking, setIsWorking] = useState(false);
+  const [localSaveMessage, setLocalSaveMessage] = useState("Loading...");
+  const hasLoadedProfileRef = useRef(false);
 
-  const [form, setForm] = useState<InspectionFormState>({
-    inspectionStatus: "not-scheduled",
-    inspectionDate: "",
-    inspectionWindow: "",
-    buyerInspectorName: "",
-    accessInstructions: "",
-    utilitiesReady: "",
-    repairPreferences: "",
-    creditPreferences: "",
-    repairDeadline: "",
-    contractorPlan: "",
-    reinspectionNeeded: "",
-    reinspectionDate: "",
-    finalInspectionNotes: "",
-  });
+  const [form, setForm] = useState<ClosingFormState>(initialFormState);
+  const [tasks, setTasks] = useState<ClosingTask[]>(initialTasks);
 
-  const [issues, setIssues] = useState<InspectionIssue[]>([
-    createBlankIssue("issue-1"),
-    createBlankIssue("issue-2"),
-  ]);
+  const previousStep = dashboardSteps[6];
 
-  const previousStep = dashboardSteps[5];
-  const nextStep = dashboardSteps[7];
-
-  function updateForm<K extends keyof InspectionFormState>(
+  function updateForm<K extends keyof ClosingFormState>(
     key: K,
-    value: InspectionFormState[K]
+    value: ClosingFormState[K]
   ) {
     setForm((prev) => ({
       ...prev,
       [key]: value,
     }));
+    setLocalSaveMessage("Saving...");
   }
 
-  function updateIssue(
-    issueId: string,
-    key: keyof InspectionIssue,
+  function updateTask(
+    taskId: string,
+    key: keyof ClosingTask,
     value: string
   ) {
-    setIssues((prev) =>
-      prev.map((issue) =>
-        issue.id === issueId
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.id === taskId
           ? {
-              ...issue,
+              ...task,
               [key]: value,
             }
-          : issue
+          : task
       )
     );
+    setLocalSaveMessage("Saving...");
   }
 
-  function addIssue() {
-    setIssues((prev) => [...prev, createBlankIssue(`issue-${Date.now()}`)]);
-  }
+  useEffect(() => {
+    if (!profile || hasLoadedProfileRef.current) return;
 
-  function removeIssue(issueId: string) {
-    setIssues((prev) => {
-      if (prev.length <= 1) return prev;
-      return prev.filter((issue) => issue.id !== issueId);
-    });
-  }
+    const saved = profile.progress?.closing;
 
-  const enteredIssues = useMemo(() => {
-    return issues.filter(
-      (issue) =>
-        issue.title.trim() ||
-        issue.requestedAction.trim() ||
-        issue.agreedResolution.trim()
-    );
-  }, [issues]);
+    if (saved) {
+      setForm({
+        ...initialFormState,
+        ...(saved.form || {}),
+      });
 
-  const majorIssues = useMemo(
-    () => enteredIssues.filter((issue) => issue.severity === "major").length,
-    [enteredIssues]
+      if (Array.isArray(saved.tasks) && saved.tasks.length > 0) {
+        setTasks(saved.tasks);
+      }
+
+      setDraftId(saved.draftId ?? null);
+    }
+
+    hasLoadedProfileRef.current = true;
+    setLocalSaveMessage("Saved");
+  }, [profile]);
+
+  useEffect(() => {
+    if (!hasLoadedProfileRef.current) return;
+
+    const timeout = setTimeout(async () => {
+      const result = await saveProfile({
+        currentStep: "closing",
+        progressPatch: {
+          closing: {
+            form,
+            tasks,
+            draftId,
+          },
+        },
+      });
+
+      setLocalSaveMessage(result ? "Saved" : "Save failed");
+    }, 800);
+
+    return () => clearTimeout(timeout);
+  }, [form, tasks, draftId, saveProfile]);
+
+  const completedTasks = useMemo(
+    () => tasks.filter((task) => task.status === "complete").length,
+    [tasks]
   );
 
-  const unresolvedIssues = useMemo(
-    () =>
-      enteredIssues.filter(
-        (issue) =>
-          !issue.agreedResolution.trim() ||
-          issue.sellerResponse === "" ||
-          issue.sellerResponse === "undecided"
-      ).length,
-    [enteredIssues]
+  const inProgressTasks = useMemo(
+    () => tasks.filter((task) => task.status === "in-progress").length,
+    [tasks]
   );
 
-  const estimatedRepairTotal = useMemo(() => {
-    const values = enteredIssues
-      .map((issue) => parseCurrency(issue.estimatedCost))
-      .filter((value): value is number => value !== null);
-
-    if (!values.length) return null;
-    return values.reduce((sum, value) => sum + value, 0);
-  }, [enteredIssues]);
+  const closingCostsDisplay = useMemo(() => {
+    if (!form.sellerClosingCostsEstimate.trim()) return "Not set";
+    return formatCurrencyString(form.sellerClosingCostsEstimate);
+  }, [form.sellerClosingCostsEstimate]);
 
   async function handleSaveDraft() {
     try {
-      setIsSaving(true);
+      setIsWorking(true);
 
       await new Promise((resolve) => setTimeout(resolve, 600));
 
-      if (!draftId) {
-        setDraftId(`inspection-${Date.now()}`);
-      }
+      const nextDraftId = draftId || `closing-${Date.now()}`;
+      setDraftId(nextDraftId);
 
-      alert("Inspection draft saved.");
-    } catch (error) {
-      console.error(error);
-      alert("Unable to save inspection draft.");
+      const result = await saveProfile({
+        currentStep: "closing",
+        progressPatch: {
+          closing: {
+            form,
+            tasks,
+            draftId: nextDraftId,
+          },
+        },
+      });
+
+      setLocalSaveMessage(result ? "Saved" : "Save failed");
+      alert("Closing draft saved.");
+    } catch (err) {
+      console.error(err);
+      alert("Unable to save closing draft.");
     } finally {
-      setIsSaving(false);
+      setIsWorking(false);
     }
+  }
+
+  if (loading) {
+    return (
+      <div style={{ maxWidth: "1180px", paddingTop: "24px" }}>
+        <p style={{ color: "var(--ackret-muted)", fontSize: "16px" }}>
+          Loading your closing step...
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -180,7 +230,7 @@ export default function InspectionPage() {
           color: "var(--ackret-gold-dark)",
         }}
       >
-        Step 7 of 8
+        Step 8 of 8
       </p>
 
       <h1
@@ -193,7 +243,7 @@ export default function InspectionPage() {
           fontWeight: 500,
         }}
       >
-        Complete Inspection
+        Closing
       </h1>
 
       <p
@@ -205,9 +255,9 @@ export default function InspectionPage() {
           color: "var(--ackret-muted)",
         }}
       >
-        Track inspection timing, document buyer requests, and decide how you
-        will respond to repairs, credits, or concessions. This step keeps the
-        inspection phase organized so it does not derail your closing.
+        Organize the last details before closing day so nothing gets missed.
+        Track the title company, timeline, walkthrough, utilities, keys,
+        documents, and final questions before the sale is complete.
       </p>
 
       <div
@@ -221,18 +271,21 @@ export default function InspectionPage() {
       >
         <div style={{ display: "grid", gap: "20px", position: "sticky", top: 24 }}>
           <Card>
-            <SectionHeading eyebrow="Inspection Snapshot" title="Current status" />
+            <SectionHeading eyebrow="Closing Snapshot" title="Where things stand" />
 
             <StatRow
-              label="Inspection status"
-              value={inspectionStatusLabel(form.inspectionStatus)}
+              label="Closing status"
+              value={closingStatusLabel(form.closingStatus)}
             />
-            <StatRow label="Issues entered" value={`${enteredIssues.length}`} />
-            <StatRow label="Major issues" value={`${majorIssues}`} />
-            <StatRow label="Unresolved items" value={`${unresolvedIssues}`} />
+            <StatRow label="Tasks complete" value={`${completedTasks}`} />
+            <StatRow label="Tasks in progress" value={`${inProgressTasks}`} />
             <StatRow
-              label="Estimated total"
-              value={estimatedRepairTotal ? formatCurrency(estimatedRepairTotal) : "Not set"}
+              label="Closing date"
+              value={form.closingDate || "Not set"}
+            />
+            <StatRow
+              label="Estimated seller costs"
+              value={closingCostsDisplay}
               last
             />
           </Card>
@@ -241,8 +294,8 @@ export default function InspectionPage() {
         <div style={{ display: "grid", gap: "24px" }}>
           <Card>
             <SectionHeading
-              eyebrow="Inspection Summary"
-              title="Keep the phase organized from start to finish"
+              eyebrow="Closing Summary"
+              title="Final transaction details at a glance"
             />
 
             <div
@@ -253,34 +306,28 @@ export default function InspectionPage() {
               }}
             >
               <SummaryTile
-                label="Inspection date"
-                value={form.inspectionDate || "Not scheduled"}
+                label="Closing date"
+                value={form.closingDate || "Not set"}
               />
               <SummaryTile
-                label="Inspection status"
-                value={inspectionStatusLabel(form.inspectionStatus)}
+                label="Closing status"
+                value={closingStatusLabel(form.closingStatus)}
               />
               <SummaryTile
-                label="Reinspection"
-                value={
-                  form.reinspectionNeeded === "yes"
-                    ? form.reinspectionDate || "Needed"
-                    : form.reinspectionNeeded === "no"
-                    ? "Not needed"
-                    : "Not decided"
-                }
+                label="Final walkthrough"
+                value={form.finalWalkthroughDate || "Not set"}
               />
               <SummaryTile
-                label="Estimated repair total"
-                value={estimatedRepairTotal ? formatCurrency(estimatedRepairTotal) : "Not set"}
+                label="Seller costs"
+                value={closingCostsDisplay}
               />
             </div>
           </Card>
 
           <Card>
             <SectionHeading
-              eyebrow="Inspection Setup"
-              title="Document the timing and logistics"
+              eyebrow="Closing Logistics"
+              title="Document the who, where, and when"
             />
 
             <div
@@ -291,213 +338,78 @@ export default function InspectionPage() {
               }}
             >
               <SelectField
-                label="Inspection Status"
-                value={form.inspectionStatus}
+                label="Closing Status"
+                value={form.closingStatus}
                 onChange={(value) =>
                   updateForm(
-                    "inspectionStatus",
-                    value as InspectionFormState["inspectionStatus"]
+                    "closingStatus",
+                    value as ClosingFormState["closingStatus"]
                   )
                 }
                 options={[
-                  { value: "not-scheduled", label: "Not scheduled" },
+                  { value: "not-started", label: "Not started" },
                   { value: "scheduled", label: "Scheduled" },
-                  { value: "completed", label: "Completed" },
-                  { value: "resolved", label: "Resolved" },
+                  { value: "documents-in-progress", label: "Documents in progress" },
+                  { value: "clear-to-close", label: "Clear to close" },
+                  { value: "closed", label: "Closed" },
                 ]}
               />
 
               <Field
-                label="Inspection Date"
+                label="Closing Date"
                 type="date"
-                value={form.inspectionDate}
-                onChange={(value) => updateForm("inspectionDate", value)}
+                value={form.closingDate}
+                onChange={(value) => updateForm("closingDate", value)}
               />
 
               <Field
-                label="Inspection Window / Time"
-                value={form.inspectionWindow}
-                onChange={(value) => updateForm("inspectionWindow", value)}
-                placeholder="Example: 9am–12pm"
+                label="Closing Time"
+                value={form.closingTime}
+                onChange={(value) => updateForm("closingTime", value)}
+                placeholder="Example: 10:00 AM"
               />
 
               <Field
-                label="Buyer Inspector Name"
-                value={form.buyerInspectorName}
-                onChange={(value) => updateForm("buyerInspectorName", value)}
-                placeholder="Inspector or company"
-              />
-
-              <SelectField
-                label="Utilities Ready for Inspection?"
-                value={form.utilitiesReady}
-                onChange={(value) =>
-                  updateForm(
-                    "utilitiesReady",
-                    value as InspectionFormState["utilitiesReady"]
-                  )
-                }
-                options={[
-                  { value: "yes", label: "Yes" },
-                  { value: "no", label: "No" },
-                ]}
+                label="Closing Location"
+                value={form.closingLocation}
+                onChange={(value) => updateForm("closingLocation", value)}
+                placeholder="Title company office or attorney office"
               />
 
               <Field
-                label="Repair Deadline"
-                type="date"
-                value={form.repairDeadline}
-                onChange={(value) => updateForm("repairDeadline", value)}
+                label="Title Company"
+                value={form.titleCompany}
+                onChange={(value) => updateForm("titleCompany", value)}
+                placeholder="Company name"
               />
 
-              <TextAreaField
-                label="Access Instructions"
-                value={form.accessInstructions}
-                onChange={(value) => updateForm("accessInstructions", value)}
-                placeholder="Garage code, pet instructions, alarm notes, basement access, attic access, etc."
-                rows={4}
-                fullWidth
+              <Field
+                label="Title Officer / Contact"
+                value={form.titleOfficer}
+                onChange={(value) => updateForm("titleOfficer", value)}
+                placeholder="Contact person"
+              />
+
+              <Field
+                label="Attorney Name"
+                value={form.attorneyName}
+                onChange={(value) => updateForm("attorneyName", value)}
+                placeholder="Optional"
+              />
+
+              <Field
+                label="Buyer Lender"
+                value={form.buyerLender}
+                onChange={(value) => updateForm("buyerLender", value)}
+                placeholder="Bank or lender"
               />
             </div>
           </Card>
 
           <Card>
             <SectionHeading
-              eyebrow="Inspection Issues"
-              title="Track each requested repair, credit, or concern"
-            />
-
-            <div style={{ display: "grid", gap: "18px" }}>
-              {issues.map((issue, index) => (
-                <div
-                  key={issue.id}
-                  style={{
-                    border: "1px solid rgba(22,58,112,0.10)",
-                    borderRadius: "18px",
-                    padding: "18px",
-                    background: "#fbfbf9",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: "16px",
-                      alignItems: "center",
-                      marginBottom: "14px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: "14px",
-                        letterSpacing: "0.12em",
-                        textTransform: "uppercase",
-                        color: "var(--ackret-gold-dark)",
-                      }}
-                    >
-                      Issue {index + 1}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => removeIssue(issue.id)}
-                      style={smallGhostButtonStyle}
-                    >
-                      Remove
-                    </button>
-                  </div>
-
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                      gap: "14px",
-                    }}
-                  >
-                    <Field
-                      label="Issue Title"
-                      value={issue.title}
-                      onChange={(value) => updateIssue(issue.id, "title", value)}
-                      placeholder="Example: Roof flashing, furnace, radon, GFCI issue"
-                      fullWidth
-                    />
-
-                    <SelectField
-                      label="Severity"
-                      value={issue.severity}
-                      onChange={(value) => updateIssue(issue.id, "severity", value)}
-                      options={[
-                        { value: "minor", label: "Minor" },
-                        { value: "moderate", label: "Moderate" },
-                        { value: "major", label: "Major" },
-                      ]}
-                    />
-
-                    <SelectField
-                      label="Seller Response"
-                      value={issue.sellerResponse}
-                      onChange={(value) =>
-                        updateIssue(issue.id, "sellerResponse", value)
-                      }
-                      options={[
-                        { value: "repair", label: "Repair" },
-                        { value: "credit", label: "Credit" },
-                        { value: "decline", label: "Decline" },
-                        { value: "undecided", label: "Undecided" },
-                      ]}
-                    />
-
-                    <Field
-                      label="Estimated Cost"
-                      value={issue.estimatedCost}
-                      onChange={(value) => updateIssue(issue.id, "estimatedCost", value)}
-                      placeholder="1500"
-                    />
-
-                    <TextAreaField
-                      label="Buyer Requested Action"
-                      value={issue.requestedAction}
-                      onChange={(value) =>
-                        updateIssue(issue.id, "requestedAction", value)
-                      }
-                      placeholder="What exactly did the buyer request?"
-                      rows={3}
-                      fullWidth
-                    />
-
-                    <TextAreaField
-                      label="Agreed Resolution"
-                      value={issue.agreedResolution}
-                      onChange={(value) =>
-                        updateIssue(issue.id, "agreedResolution", value)
-                      }
-                      placeholder="What was ultimately agreed to?"
-                      rows={3}
-                      fullWidth
-                    />
-
-                    <TextAreaField
-                      label="Notes"
-                      value={issue.notes}
-                      onChange={(value) => updateIssue(issue.id, "notes", value)}
-                      placeholder="Contractor input, timing, risk, negotiation notes, etc."
-                      rows={3}
-                      fullWidth
-                    />
-                  </div>
-                </div>
-              ))}
-
-              <button type="button" onClick={addIssue} style={secondaryActionButtonStyle}>
-                Add Another Inspection Issue
-              </button>
-            </div>
-          </Card>
-
-          <Card>
-            <SectionHeading
-              eyebrow="Resolution Plan"
-              title="Document how you plan to get through inspection"
+              eyebrow="Move-Out + Transfer Plan"
+              title="Make the handoff smooth"
             />
 
             <div
@@ -507,60 +419,170 @@ export default function InspectionPage() {
                 gap: "18px",
               }}
             >
-              <TextAreaField
-                label="Repair Preferences"
-                value={form.repairPreferences}
-                onChange={(value) => updateForm("repairPreferences", value)}
-                placeholder="Which kinds of issues are you willing to repair before closing?"
-                rows={4}
-                fullWidth
-              />
-
-              <TextAreaField
-                label="Credit Preferences"
-                value={form.creditPreferences}
-                onChange={(value) => updateForm("creditPreferences", value)}
-                placeholder="When would you rather give a credit instead of making the repair?"
-                rows={4}
-                fullWidth
-              />
-
-              <TextAreaField
-                label="Contractor / Vendor Plan"
-                value={form.contractorPlan}
-                onChange={(value) => updateForm("contractorPlan", value)}
-                placeholder="Who will handle repairs, bids, scheduling, receipts, and documentation?"
-                rows={4}
-                fullWidth
-              />
-
-              <SelectField
-                label="Reinspection Needed?"
-                value={form.reinspectionNeeded}
-                onChange={(value) =>
-                  updateForm(
-                    "reinspectionNeeded",
-                    value as InspectionFormState["reinspectionNeeded"]
-                  )
-                }
-                options={[
-                  { value: "yes", label: "Yes" },
-                  { value: "no", label: "No" },
-                ]}
+              <Field
+                label="Final Walkthrough Date"
+                type="date"
+                value={form.finalWalkthroughDate}
+                onChange={(value) => updateForm("finalWalkthroughDate", value)}
               />
 
               <Field
-                label="Reinspection Date"
+                label="Possession Date"
                 type="date"
-                value={form.reinspectionDate}
-                onChange={(value) => updateForm("reinspectionDate", value)}
+                value={form.possessionDate}
+                onChange={(value) => updateForm("possessionDate", value)}
               />
 
               <TextAreaField
-                label="Final Inspection Notes"
-                value={form.finalInspectionNotes}
-                onChange={(value) => updateForm("finalInspectionNotes", value)}
-                placeholder="Summarize what still needs to happen before moving to closing."
+                label="Utilities Transfer Plan"
+                value={form.utilitiesTransferPlan}
+                onChange={(value) => updateForm("utilitiesTransferPlan", value)}
+                placeholder="Gas, electric, water, trash, internet, HOA notifications, etc."
+                rows={4}
+                fullWidth
+              />
+
+              <TextAreaField
+                label="Keys / Garage Openers Plan"
+                value={form.keysGarageOpenersPlan}
+                onChange={(value) =>
+                  updateForm("keysGarageOpenersPlan", value)
+                }
+                placeholder="What needs to be handed over and where it will be left."
+                rows={4}
+                fullWidth
+              />
+
+              <TextAreaField
+                label="Proceeds Plan"
+                value={form.proceedsPlan}
+                onChange={(value) => updateForm("proceedsPlan", value)}
+                placeholder="Wire instructions, cashier’s check, account destination, etc."
+                rows={4}
+                fullWidth
+              />
+            </div>
+          </Card>
+
+          <Card>
+            <SectionHeading
+              eyebrow="Closing Checklist"
+              title="Track the last important items"
+            />
+
+            <div style={{ display: "grid", gap: "16px" }}>
+              {tasks.map((task) => (
+                <div
+                  key={task.id}
+                  style={{
+                    border: "1px solid rgba(22,58,112,0.10)",
+                    borderRadius: "18px",
+                    padding: "18px",
+                    background: "#fbfbf9",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1.1fr 0.8fr",
+                      gap: "16px",
+                      alignItems: "start",
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          fontSize: "16px",
+                          lineHeight: 1.5,
+                          color: "var(--ackret-ink)",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {task.title}
+                      </div>
+
+                      <div style={{ marginTop: "14px" }}>
+                        <TextAreaField
+                          label="Notes"
+                          value={task.notes}
+                          onChange={(value) => updateTask(task.id, "notes", value)}
+                          placeholder="Add any details or reminders for this task."
+                          rows={3}
+                          fullWidth
+                        />
+                      </div>
+                    </div>
+
+                    <SelectField
+                      label="Status"
+                      value={task.status}
+                      onChange={(value) => updateTask(task.id, "status", value)}
+                      options={[
+                        { value: "not-started", label: "Not started" },
+                        { value: "in-progress", label: "In progress" },
+                        { value: "complete", label: "Complete" },
+                      ]}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card>
+            <SectionHeading
+              eyebrow="Final Notes"
+              title="Document anything that still needs attention"
+            />
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr",
+                gap: "18px",
+              }}
+            >
+              <Field
+                label="Estimated Seller Closing Costs"
+                value={form.sellerClosingCostsEstimate}
+                onChange={(value) =>
+                  updateForm("sellerClosingCostsEstimate", value)
+                }
+                placeholder="Example: 4500"
+              />
+
+              <TextAreaField
+                label="Payoff Notes"
+                value={form.payoffNotes}
+                onChange={(value) => updateForm("payoffNotes", value)}
+                placeholder="Mortgage payoff, lien items, or anything still being confirmed."
+                rows={4}
+                fullWidth
+              />
+
+              <TextAreaField
+                label="Documents Still Needed"
+                value={form.documentsStillNeeded}
+                onChange={(value) => updateForm("documentsStillNeeded", value)}
+                placeholder="Any missing forms, IDs, receipts, title docs, affidavits, etc."
+                rows={4}
+                fullWidth
+              />
+
+              <TextAreaField
+                label="Final Questions"
+                value={form.finalQuestions}
+                onChange={(value) => updateForm("finalQuestions", value)}
+                placeholder="Anything still unclear before closing day."
+                rows={4}
+                fullWidth
+              />
+
+              <TextAreaField
+                label="Closing Notes"
+                value={form.closingNotes}
+                onChange={(value) => updateForm("closingNotes", value)}
+                placeholder="Final reminders, deal notes, and anything you want recorded for this step."
                 rows={5}
                 fullWidth
               />
@@ -570,15 +592,19 @@ export default function InspectionPage() {
 
         <div style={{ display: "grid", gap: "20px", position: "sticky", top: 24 }}>
           <Card>
-            <SectionHeading eyebrow="Progress" title="Inspection checklist" />
+            <SectionHeading eyebrow="Progress" title="Closing checklist" />
 
             <StatRow
-              label="Inspection status"
-              value={inspectionStatusLabel(form.inspectionStatus)}
+              label="Closing status"
+              value={closingStatusLabel(form.closingStatus)}
             />
-            <StatRow label="Issues entered" value={`${enteredIssues.length}`} />
-            <StatRow label="Major issues" value={`${majorIssues}`} />
-            <StatRow label="Unresolved items" value={`${unresolvedIssues}`} />
+            <StatRow label="Tasks complete" value={`${completedTasks}`} />
+            <StatRow label="Tasks in progress" value={`${inProgressTasks}`} />
+            <StatRow label="Closing date" value={form.closingDate || "Not set"} />
+            <StatRow
+              label="Save status"
+              value={saving ? "Saving..." : localSaveMessage}
+            />
             <StatRow
               label="Draft status"
               value={draftId ? "Saved" : "Not saved yet"}
@@ -587,39 +613,49 @@ export default function InspectionPage() {
           </Card>
 
           <Card>
-            <SectionHeading eyebrow="Actions" title="Save and continue" />
+            <SectionHeading eyebrow="Actions" title="Save and finish" />
 
             <div style={{ display: "grid", gap: "12px" }}>
               <button
                 type="button"
                 onClick={handleSaveDraft}
                 style={primaryButtonStyle}
-                disabled={isSaving}
+                disabled={isWorking || saving}
               >
-                {isSaving ? "Saving..." : "Save Draft"}
+                {isWorking ? "Saving..." : "Save Draft"}
               </button>
-
-              <Link href={nextStep.href} style={{ textDecoration: "none" }}>
-                <div style={secondaryButtonStyle}>Continue to Next Step</div>
-              </Link>
 
               <Link href={previousStep.href} style={{ textDecoration: "none" }}>
                 <div style={secondaryActionButtonStyle}>Previous Step</div>
               </Link>
             </div>
 
-            <p
-              style={{
-                marginTop: "14px",
-                marginBottom: 0,
-                fontSize: "13px",
-                lineHeight: 1.7,
-                color: "var(--ackret-muted)",
-              }}
-            >
-              The goal here is to resolve inspection issues clearly and keep the
-              file organized before the closing step.
-            </p>
+            {error ? (
+              <p
+                style={{
+                  marginTop: "14px",
+                  marginBottom: 0,
+                  fontSize: "13px",
+                  lineHeight: 1.7,
+                  color: "#b42318",
+                }}
+              >
+                {error}
+              </p>
+            ) : (
+              <p
+                style={{
+                  marginTop: "14px",
+                  marginBottom: 0,
+                  fontSize: "13px",
+                  lineHeight: 1.7,
+                  color: "var(--ackret-muted)",
+                }}
+              >
+                This final step is about making closing day organized, smooth,
+                and free of avoidable surprises.
+              </p>
+            )}
           </Card>
         </div>
       </div>
@@ -627,11 +663,12 @@ export default function InspectionPage() {
   );
 }
 
-function inspectionStatusLabel(value: InspectionStatus): string {
-  if (value === "not-scheduled") return "Not scheduled";
+function closingStatusLabel(value: ClosingStatus): string {
+  if (value === "not-started") return "Not started";
   if (value === "scheduled") return "Scheduled";
-  if (value === "completed") return "Completed";
-  if (value === "resolved") return "Resolved";
+  if (value === "documents-in-progress") return "Documents in progress";
+  if (value === "clear-to-close") return "Clear to close";
+  if (value === "closed") return "Closed";
   return "Not set";
 }
 
@@ -913,6 +950,12 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
+function formatCurrencyString(value: string): string {
+  const parsed = parseCurrency(value);
+  if (parsed === null) return value;
+  return formatCurrency(parsed);
+}
+
 const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "14px 16px",
@@ -965,30 +1008,4 @@ const secondaryActionButtonStyle: React.CSSProperties = {
   cursor: "pointer",
   boxSizing: "border-box",
   textAlign: "center",
-};
-
-const secondaryButtonStyle: React.CSSProperties = {
-  width: "100%",
-  borderRadius: "999px",
-  padding: "16px 20px",
-  background: "transparent",
-  color: "var(--ackret-gold-dark)",
-  border: "1px solid rgba(197, 154, 74, 0.35)",
-  fontSize: "13px",
-  letterSpacing: "0.14em",
-  textTransform: "uppercase",
-  textAlign: "center",
-  boxSizing: "border-box",
-};
-
-const smallGhostButtonStyle: React.CSSProperties = {
-  borderRadius: "999px",
-  padding: "8px 12px",
-  background: "transparent",
-  color: "var(--ackret-muted)",
-  border: "1px solid rgba(22,58,112,0.12)",
-  fontSize: "11px",
-  letterSpacing: "0.1em",
-  textTransform: "uppercase",
-  cursor: "pointer",
 };

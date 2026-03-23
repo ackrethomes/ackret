@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { dashboardSteps } from "@/lib/dashboardSteps";
+import { useSellerProfile } from "@/hooks/useSellerProfile";
 
 type MarketingAsset = {
   id: string;
@@ -41,32 +43,38 @@ const initialAssets: MarketingAsset[] = [
   { id: "signage", name: "Yard sign / directional signage", status: "not-started", notes: "" },
 ];
 
+const initialFormState: MarketingFormState = {
+  photoPlan: "",
+  photoDate: "",
+  photoNotes: "",
+  videoPlan: "",
+  videoDate: "",
+  videoNotes: "",
+  openHousePlan: "",
+  openHouseDate: "",
+  openHouseNotes: "",
+  brochurePlan: "",
+  socialMediaPlan: "",
+  emailBlastPlan: "",
+  propertyHighlights: "",
+  idealBuyer: "",
+  neighborhoodHighlights: "",
+  stagingChecklist: "",
+  curbAppealChecklist: "",
+  showingPrepChecklist: "",
+  marketingNotes: "",
+};
+
 export default function PrepareMarketingPage() {
+  const router = useRouter();
+  const { profile, loading, saving, error, saveProfile } = useSellerProfile();
+
   const [draftId, setDraftId] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isWorking, setIsWorking] = useState(false);
+  const [localSaveMessage, setLocalSaveMessage] = useState("Loading...");
+  const hasLoadedProfileRef = useRef(false);
 
-  const [form, setForm] = useState<MarketingFormState>({
-    photoPlan: "",
-    photoDate: "",
-    photoNotes: "",
-    videoPlan: "",
-    videoDate: "",
-    videoNotes: "",
-    openHousePlan: "",
-    openHouseDate: "",
-    openHouseNotes: "",
-    brochurePlan: "",
-    socialMediaPlan: "",
-    emailBlastPlan: "",
-    propertyHighlights: "",
-    idealBuyer: "",
-    neighborhoodHighlights: "",
-    stagingChecklist: "",
-    curbAppealChecklist: "",
-    showingPrepChecklist: "",
-    marketingNotes: "",
-  });
-
+  const [form, setForm] = useState<MarketingFormState>(initialFormState);
   const [assets, setAssets] = useState<MarketingAsset[]>(initialAssets);
 
   const previousStep = dashboardSteps[3];
@@ -80,6 +88,7 @@ export default function PrepareMarketingPage() {
       ...prev,
       [key]: value,
     }));
+    setLocalSaveMessage("Saving...");
   }
 
   function updateAsset(
@@ -97,7 +106,51 @@ export default function PrepareMarketingPage() {
           : asset
       )
     );
+    setLocalSaveMessage("Saving...");
   }
+
+  useEffect(() => {
+    if (!profile || hasLoadedProfileRef.current) return;
+
+    const saved = profile.progress?.prepareMarketing;
+
+    if (saved) {
+      setForm({
+        ...initialFormState,
+        ...(saved.form || {}),
+      });
+
+      if (Array.isArray(saved.assets) && saved.assets.length > 0) {
+        setAssets(saved.assets);
+      }
+
+      setDraftId(saved.draftId ?? null);
+    }
+
+    hasLoadedProfileRef.current = true;
+    setLocalSaveMessage("Saved");
+  }, [profile]);
+
+  useEffect(() => {
+    if (!hasLoadedProfileRef.current) return;
+
+    const timeout = setTimeout(async () => {
+      const result = await saveProfile({
+        currentStep: "prepare-marketing",
+        progressPatch: {
+          prepareMarketing: {
+            form,
+            assets,
+            draftId,
+          },
+        },
+      });
+
+      setLocalSaveMessage(result ? "Saved" : "Save failed");
+    }, 800);
+
+    return () => clearTimeout(timeout);
+  }, [form, assets, draftId]);
 
   const readyAssetsCount = useMemo(
     () => assets.filter((asset) => asset.status === "ready").length,
@@ -117,21 +170,75 @@ export default function PrepareMarketingPage() {
 
   async function handleSaveDraft() {
     try {
-      setIsSaving(true);
+      setIsWorking(true);
 
       await new Promise((resolve) => setTimeout(resolve, 600));
 
-      if (!draftId) {
-        setDraftId(`prepare-marketing-${Date.now()}`);
-      }
+      const nextDraftId = draftId || `prepare-marketing-${Date.now()}`;
+      setDraftId(nextDraftId);
 
+      const result = await saveProfile({
+        currentStep: "prepare-marketing",
+        progressPatch: {
+          prepareMarketing: {
+            form,
+            assets,
+            draftId: nextDraftId,
+          },
+        },
+      });
+
+      setLocalSaveMessage(result ? "Saved" : "Save failed");
       alert("Marketing draft saved.");
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
       alert("Unable to save marketing draft.");
     } finally {
-      setIsSaving(false);
+      setIsWorking(false);
     }
+  }
+
+  async function handleContinue() {
+    try {
+      setIsWorking(true);
+
+      const nextSlug = nextStep.href.replace("/dashboard/", "");
+
+      const result = await saveProfile({
+        currentStep: nextSlug,
+        progressPatch: {
+          prepareMarketing: {
+            form,
+            assets,
+            draftId,
+          },
+        },
+      });
+
+      if (!result) {
+        setLocalSaveMessage("Save failed");
+        alert("Unable to save your progress before continuing.");
+        return;
+      }
+
+      setLocalSaveMessage("Saved");
+      router.push(nextStep.href);
+    } catch (err) {
+      console.error(err);
+      alert("Unable to continue right now.");
+    } finally {
+      setIsWorking(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div style={{ maxWidth: "1180px", paddingTop: "24px" }}>
+        <p style={{ color: "var(--ackret-muted)", fontSize: "16px" }}>
+          Loading your marketing step...
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -543,6 +650,7 @@ export default function PrepareMarketingPage() {
             <StatRow label="Photo date" value={form.photoDate || "Not set"} />
             <StatRow label="Video plan" value={yesNoLongLabel(form.videoPlan)} />
             <StatRow label="Open house" value={yesNoLongLabel(form.openHousePlan)} />
+            <StatRow label="Save status" value={saving ? "Saving..." : localSaveMessage} />
             <StatRow label="Draft status" value={draftId ? "Saved" : "Not saved yet"} last />
           </Card>
 
@@ -554,32 +662,51 @@ export default function PrepareMarketingPage() {
                 type="button"
                 onClick={handleSaveDraft}
                 style={primaryButtonStyle}
-                disabled={isSaving}
+                disabled={isWorking || saving}
               >
-                {isSaving ? "Saving..." : "Save Draft"}
+                {isWorking ? "Saving..." : "Save Draft"}
               </button>
 
-              <Link href={nextStep.href} style={{ textDecoration: "none" }}>
-                <div style={secondaryButtonStyle}>Continue to Next Step</div>
-              </Link>
+              <button
+                type="button"
+                onClick={handleContinue}
+                style={secondaryButtonButtonStyle}
+                disabled={isWorking || saving}
+              >
+                Continue to Next Step
+              </button>
 
               <Link href={previousStep.href} style={{ textDecoration: "none" }}>
                 <div style={secondaryActionButtonStyle}>Previous Step</div>
               </Link>
             </div>
 
-            <p
-              style={{
-                marginTop: "14px",
-                marginBottom: 0,
-                fontSize: "13px",
-                lineHeight: 1.7,
-                color: "var(--ackret-muted)",
-              }}
-            >
-              This step gets the property presentation dialed in before buyers
-              see the home online or in person.
-            </p>
+            {error ? (
+              <p
+                style={{
+                  marginTop: "14px",
+                  marginBottom: 0,
+                  fontSize: "13px",
+                  lineHeight: 1.7,
+                  color: "#b42318",
+                }}
+              >
+                {error}
+              </p>
+            ) : (
+              <p
+                style={{
+                  marginTop: "14px",
+                  marginBottom: 0,
+                  fontSize: "13px",
+                  lineHeight: 1.7,
+                  color: "var(--ackret-muted)",
+                }}
+              >
+                This step gets the property presentation dialed in before buyers
+                see the home online or in person.
+              </p>
+            )}
           </Card>
         </div>
       </div>
@@ -915,7 +1042,7 @@ const secondaryActionButtonStyle: React.CSSProperties = {
   textAlign: "center",
 };
 
-const secondaryButtonStyle: React.CSSProperties = {
+const secondaryButtonButtonStyle: React.CSSProperties = {
   width: "100%",
   borderRadius: "999px",
   padding: "16px 20px",
@@ -927,4 +1054,5 @@ const secondaryButtonStyle: React.CSSProperties = {
   textTransform: "uppercase",
   textAlign: "center",
   boxSizing: "border-box",
+  cursor: "pointer",
 };

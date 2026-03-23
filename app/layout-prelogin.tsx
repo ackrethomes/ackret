@@ -19,6 +19,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         {!isLive ? (
+          // 🔒 COMING SOON PAGE
           <main className="min-h-screen flex items-center justify-center bg-white px-6 text-center">
             <div className="max-w-lg">
               <div className="flex justify-center mb-6">
@@ -36,8 +37,8 @@ export default function RootLayout({
               </h1>
 
               <p className="mt-4 text-lg text-slate-600">
-                Ackret is getting ready to launch. Sell your home without a
-                realtor — step by step.
+                Ackret is getting ready to launch.  
+                Sell your home without a realtor — step by step.
               </p>
 
               <p className="mt-6 text-sm text-slate-500">
@@ -46,6 +47,7 @@ export default function RootLayout({
             </div>
           </main>
         ) : (
+          // ✅ FULL SITE
           <>
             <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white">
               <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -59,28 +61,9 @@ export default function RootLayout({
                   />
                 </Link>
 
-                <div className="flex items-center gap-3">
-                  <Link
-                    href="/login"
-                    className="text-sm"
-                    style={{
-                      padding: "10px 16px",
-                      borderRadius: "999px",
-                      border: "1px solid rgba(22,58,112,0.2)",
-                      color: "var(--ackret-navy)",
-                      letterSpacing: "0.12em",
-                      textTransform: "uppercase",
-                      textDecoration: "none",
-                      fontWeight: 600,
-                    }}
-                  >
-                    Log In
-                  </Link>
-
-                  <Link href="/pricing" className="btn-primary text-sm">
-                    Start My Home Sale
-                  </Link>
-                </div>
+                <Link href="/pricing" className="btn-primary text-sm">
+                  Start My Home Sale
+                </Link>
               </div>
             </header>
 

@@ -397,6 +397,134 @@ export default function SetPricePage() {
         </div>
 
         <div style={{ display: "grid", gap: "24px" }}>
+	<Card>
+  <SectionHeading
+    eyebrow="Choosing Comparables"
+    title="What makes a true comp?"
+  />
+
+  <p
+    style={{
+      marginTop: 0,
+      marginBottom: "18px",
+      fontSize: "16px",
+      lineHeight: 1.8,
+      color: "var(--ackret-muted)",
+    }}
+  >
+    The best comparable sales are homes that a real buyer would reasonably
+    compare to your property. Try to use recently sold homes that are as close
+    to yours as possible in the factors below.
+  </p>
+
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+      gap: "18px",
+    }}
+  >
+    <div
+      style={{
+        border: "1px solid rgba(22,58,112,0.10)",
+        borderRadius: "18px",
+        padding: "18px",
+        background: "#fbfbf9",
+      }}
+    >
+      <div
+        style={{
+          fontSize: "12px",
+          letterSpacing: "0.14em",
+          textTransform: "uppercase",
+          color: "var(--ackret-gold-dark)",
+          marginBottom: "12px",
+        }}
+      >
+        Strong comps usually match on
+      </div>
+
+      <ul
+        style={{
+          margin: 0,
+          paddingLeft: "18px",
+          display: "grid",
+          gap: "10px",
+          color: "var(--ackret-ink)",
+          lineHeight: 1.7,
+        }}
+      >
+        <li>Same neighborhood, subdivision, or very nearby area</li>
+        <li>Sold recently, ideally within the last few months</li>
+        <li>Similar square footage and room count</li>
+        <li>Similar age, condition, and level of updates</li>
+        <li>Similar home style, lot size, and major features</li>
+        <li>Similar school district and buyer appeal</li>
+      </ul>
+    </div>
+
+    <div
+      style={{
+        border: "1px solid rgba(22,58,112,0.10)",
+        borderRadius: "18px",
+        padding: "18px",
+        background: "#fbfbf9",
+      }}
+    >
+      <div
+        style={{
+          fontSize: "12px",
+          letterSpacing: "0.14em",
+          textTransform: "uppercase",
+          color: "var(--ackret-gold-dark)",
+          marginBottom: "12px",
+        }}
+      >
+        Avoid relying too heavily on
+      </div>
+
+      <ul
+        style={{
+          margin: 0,
+          paddingLeft: "18px",
+          display: "grid",
+          gap: "10px",
+          color: "var(--ackret-ink)",
+          lineHeight: 1.7,
+        }}
+      >
+        <li>Active listings instead of closed sales</li>
+        <li>Homes sold too long ago</li>
+        <li>Homes in a different market or town</li>
+        <li>Properties with much larger lots or acreage</li>
+        <li>Homes with much better or much worse renovations</li>
+        <li>Very different layouts, style, or amenities</li>
+      </ul>
+    </div>
+  </div>
+
+  <div
+    style={{
+      marginTop: "18px",
+      borderRadius: "18px",
+      padding: "18px",
+      background: "#fffaf0",
+      border: "1px solid rgba(197,154,74,0.25)",
+    }}
+  >
+    <p
+      style={{
+        margin: 0,
+        fontSize: "15px",
+        lineHeight: 1.8,
+        color: "var(--ackret-ink)",
+      }}
+    >
+      <strong>Simple rule:</strong> if a serious buyer would not compare that
+      home to yours, it probably is not a strong comp.
+    </p>
+  </div>
+</Card>
           <Card>
             <SectionHeading
               eyebrow="Pricing Summary"

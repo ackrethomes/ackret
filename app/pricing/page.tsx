@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function PricingPage() {
   return (
     <main className="bg-white text-slate-900">
@@ -32,13 +34,20 @@ export default function PricingPage() {
             </p>
 
             <div className="mt-8">
-              <a href="/signup" className="btn-primary w-full text-base">
+              <Link href="/checkout" className="btn-primary w-full text-base">
                 Get the FSBO System
-              </a>
+              </Link>
             </div>
 
             <p className="mt-4 text-center text-sm text-slate-500">
               Immediate access • No monthly subscription
+            </p>
+
+            <p className="mt-4 text-center text-sm text-slate-500">
+              Already purchased?{" "}
+              <Link href="/login" className="font-semibold text-slate-900 underline">
+                Log in here
+              </Link>
             </p>
           </div>
         </div>
@@ -267,13 +276,20 @@ export default function PricingPage() {
               <div className="mt-4 text-5xl font-bold tracking-tight">$499</div>
 
               <div className="mt-8">
-                <a href="/signup" className="btn-primary w-full text-base">
+                <Link href="/checkout" className="btn-primary w-full text-base">
                   Start My Home Sale
-                </a>
+                </Link>
               </div>
 
               <p className="mt-4 text-sm text-slate-500">
                 Immediate access • No monthly subscription
+              </p>
+
+              <p className="mt-4 text-sm text-slate-500">
+                Already purchased?{" "}
+                <Link href="/login" className="font-semibold text-slate-900 underline">
+                  Log in here
+                </Link>
               </p>
             </div>
           </div>
@@ -312,14 +328,21 @@ export default function PricingPage() {
           <p className="mt-3 text-base text-slate-600">One-time payment</p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <a href="/signup" className="btn-primary text-base">
+            <Link href="/checkout" className="btn-primary text-base">
               Get the FSBO System
-            </a>
+            </Link>
 
-            <a href="/" className="btn-secondary text-base">
+            <Link href="/" className="btn-secondary text-base">
               Back to How It Works
-            </a>
+            </Link>
           </div>
+
+          <p className="mt-5 text-sm text-slate-500">
+            Already purchased?{" "}
+            <Link href="/login" className="font-semibold text-slate-900 underline">
+              Log in here
+            </Link>
+          </p>
         </div>
       </section>
     </main>

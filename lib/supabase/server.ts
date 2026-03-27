@@ -12,15 +12,30 @@ export async function createClient() {
         get(name: string) {
           return cookieStore.get(name)?.value;
         },
+
         set(name: string, value: string, options: Record<string, unknown>) {
           try {
-            cookieStore.set({ name, value, ...(options || {}) });
-          } catch {}
+            cookieStore.set({
+              name,
+              value,
+              ...(options || {}),
+            });
+          } catch (err) {
+            // Happens in server components where cookies can't be mutated
+          }
         },
+
         remove(name: string, options: Record<string, unknown>) {
           try {
-            cookieStore.set({ name, value: "", ...(options || {}), maxAge: 0 });
-          } catch {}
+            cookieStore.set({
+              name,
+              value: "",
+              ...(options || {}),
+              maxAge: 0,
+            });
+          } catch (err) {
+            // Same limitation — safe to ignore
+          }
         },
       },
     }

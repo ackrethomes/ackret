@@ -2,6 +2,8 @@ import "./globals.css";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import LogoutButton from "@/components/auth/LogoutButton";
 
 export const metadata: Metadata = {
   title: "Ackret",
@@ -10,18 +12,29 @@ export const metadata: Metadata = {
 
 const isLive = process.env.SITE_LIVE === "true";
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  let session = null;
+
+  if (isLive) {
+    const supabase = await createClient();
+    const {
+      data: { session: currentSession },
+    } = await supabase.auth.getSession();
+
+    session = currentSession;
+  }
+
   return (
     <html lang="en">
       <body>
         {!isLive ? (
           <main className="min-h-screen flex items-center justify-center bg-white px-6 text-center">
             <div className="max-w-lg">
-              <div className="flex justify-center mb-6">
+              <div className="mb-6 flex justify-center">
                 <Image
                   src="/logo.png"
                   alt="Ackret Logo"
@@ -48,7 +61,7 @@ export default function RootLayout({
         ) : (
           <>
             <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white">
-              <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+              <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
                 <Link href="/">
                   <Image
                     src="/logo.png"
@@ -60,26 +73,51 @@ export default function RootLayout({
                 </Link>
 
                 <div className="flex items-center gap-3">
-                  <Link
-                    href="/login"
-                    className="text-sm"
-                    style={{
-                      padding: "10px 16px",
-                      borderRadius: "999px",
-                      border: "1px solid rgba(22,58,112,0.2)",
-                      color: "var(--ackret-navy)",
-                      letterSpacing: "0.12em",
-                      textTransform: "uppercase",
-                      textDecoration: "none",
-                      fontWeight: 600,
-                    }}
-                  >
-                    Log In
-                  </Link>
+                  {session ? (
+                    <>
+                      <Link
+                        href="/dashboard"
+                        className="text-sm"
+                        style={{
+                          padding: "10px 16px",
+                          borderRadius: "999px",
+                          border: "1px solid rgba(22,58,112,0.2)",
+                          color: "var(--ackret-navy)",
+                          letterSpacing: "0.12em",
+                          textTransform: "uppercase",
+                          textDecoration: "none",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Dashboard
+                      </Link>
 
-                  <Link href="/pricing" className="btn-primary text-sm">
-                    Start My Home Sale
-                  </Link>
+                      <LogoutButton />
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        href="/login"
+                        className="text-sm"
+                        style={{
+                          padding: "10px 16px",
+                          borderRadius: "999px",
+                          border: "1px solid rgba(22,58,112,0.2)",
+                          color: "var(--ackret-navy)",
+                          letterSpacing: "0.12em",
+                          textTransform: "uppercase",
+                          textDecoration: "none",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Log In
+                      </Link>
+
+                      <Link href="/pricing" className="btn-primary text-sm">
+                        Start My Home Sale
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
             </header>

@@ -11,12 +11,17 @@ const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // IMPORTANT: service role
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 export async function POST(req: Request) {
   const body = await req.text();
-  const sig = headers().get("stripe-signature")!;
+  const headerStore = await headers();
+  const sig = headerStore.get("stripe-signature");
+
+  if (!sig) {
+    return new NextResponse("Missing stripe-signature header", { status: 400 });
+  }
 
   let event: Stripe.Event;
 
@@ -27,41 +32,36 @@ export async function POST(req: Request) {
     return new NextResponse("Webhook Error", { status: 400 });
   }
 
-  // 🎯 THIS IS THE IMPORTANT PART
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
-
     const email = session.customer_details?.email;
 
     if (!email) {
-      console.error("No email found on session");
+      console.error("No email found on checkout session");
       return NextResponse.json({ received: true });
     }
 
-    // 🔍 Find user by email
-    const { data: users, error: userError } =
-      await supabase.auth.admin.listUsers();
+    const { data, error } = await supabase.auth.admin.listUsers();
 
-    if (userError) {
-      console.error(userError);
+    if (error) {
+      console.error("Error listing users:", error);
       return NextResponse.json({ received: true });
     }
 
-    const user = users.users.find((u) => u.email === email);
+    const user = data.users.find((u) => u.email === email);
 
     if (!user) {
       console.error("User not found for email:", email);
       return NextResponse.json({ received: true });
     }
 
-    // ✅ Update seller_profiles
     const { error: updateError } = await supabase
       .from("seller_profiles")
       .update({ is_paid: true })
       .eq("user_id", user.id);
 
     if (updateError) {
-      console.error(updateError);
+      console.error("Error updating seller_profiles:", updateError);
     } else {
       console.log("User unlocked:", email);
     }

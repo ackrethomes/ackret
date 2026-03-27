@@ -6,139 +6,59 @@ import { useRouter } from "next/navigation";
 import { dashboardSteps } from "@/lib/dashboardSteps";
 import { useSellerProfile } from "@/hooks/useSellerProfile";
 
-type ShowingMode = "open-house" | "appointment" | "flexible" | "";
-
-type ListingReadinessState = {
-  listingHeadline: string;
-  publicDescription: string;
-  privateNotes: string;
-  mlsDescriptionDraft: string;
-  listDate: string;
-  showingMode: ShowingMode;
-  showingInstructions: string;
-  occupancyStatus: "owner-occupied" | "vacant" | "tenant-occupied" | "";
-  availableDate: string;
-  lockboxPlan: "yes" | "no" | "";
-  yardSignPlan: "yes" | "no" | "";
-  onlinePostingPlan: "yes" | "no" | "";
-  buyerAgentCommissionPlan: string;
-  inclusions: string;
-  exclusions: string;
-  financingNotes: string;
-  offerDeadline: string;
+type ListingPromptForm = {
+  cityState: string;
+  price: string;
+  bedrooms: string;
+  bathrooms: string;
+  squareFootage: string;
+  lotSize: string;
+  homeFeatures: string;
+  kitchenDetails: string;
+  livingAreas: string;
+  primaryBedroom: string;
+  outdoorSpace: string;
+  locationHighlights: string;
+  recentUpdates: string;
+  additionalNotes: string;
 };
 
-type ListingChannel = {
-  id: string;
-  label: string;
-  planned: boolean;
-  notes: string;
-};
-
-type GeneratedListingCopy = {
-  headline: string;
-  publicDescription: string;
-  mlsRemarks: string;
-  socialPost: string;
-};
-
-const initialChannels: ListingChannel[] = [
-  { id: "mls", label: "MLS listing service", planned: true, notes: "" },
-  {
-    id: "zillow",
-    label: "Zillow / Homes.com / consumer portals",
-    planned: true,
-    notes: "",
-  },
-  {
-    id: "facebook",
-    label: "Facebook Marketplace / local groups",
-    planned: false,
-    notes: "",
-  },
-  { id: "yard-sign", label: "Yard sign + local traffic", planned: true, notes: "" },
-  { id: "email", label: "Share by email / word of mouth", planned: false, notes: "" },
-];
-
-const initialFormState: ListingReadinessState = {
-  listingHeadline: "",
-  publicDescription: "",
-  privateNotes: "",
-  mlsDescriptionDraft: "",
-  listDate: "",
-  showingMode: "",
-  showingInstructions: "",
-  occupancyStatus: "",
-  availableDate: "",
-  lockboxPlan: "",
-  yardSignPlan: "",
-  onlinePostingPlan: "",
-  buyerAgentCommissionPlan: "",
-  inclusions: "",
-  exclusions: "",
-  financingNotes: "",
-  offerDeadline: "",
-};
-
-const initialGeneratedCopy: GeneratedListingCopy = {
-  headline: "",
-  publicDescription: "",
-  mlsRemarks: "",
-  socialPost: "",
+const initialFormState: ListingPromptForm = {
+  cityState: "",
+  price: "",
+  bedrooms: "",
+  bathrooms: "",
+  squareFootage: "",
+  lotSize: "",
+  homeFeatures: "",
+  kitchenDetails: "",
+  livingAreas: "",
+  primaryBedroom: "",
+  outdoorSpace: "",
+  locationHighlights: "",
+  recentUpdates: "",
+  additionalNotes: "",
 };
 
 export default function ListHomePage() {
   const router = useRouter();
   const { profile, loading, saving, error, saveProfile } = useSellerProfile();
 
+  const [form, setForm] = useState<ListingPromptForm>(initialFormState);
   const [draftId, setDraftId] = useState<string | null>(null);
-  const [isWorking, setIsWorking] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [localSaveMessage, setLocalSaveMessage] = useState("Loading...");
+  const [isWorking, setIsWorking] = useState(false);
+  const [copyMessage, setCopyMessage] = useState("");
   const hasLoadedProfileRef = useRef(false);
-
-  const [form, setForm] = useState<ListingReadinessState>(initialFormState);
-  const [channels, setChannels] = useState<ListingChannel[]>(initialChannels);
-  const [generatedCopy, setGeneratedCopy] =
-    useState<GeneratedListingCopy>(initialGeneratedCopy);
 
   const previousStep = dashboardSteps[2];
   const nextStep = dashboardSteps[4];
 
-  function updateForm<K extends keyof ListingReadinessState>(
+  function updateForm<K extends keyof ListingPromptForm>(
     key: K,
-    value: ListingReadinessState[K]
+    value: ListingPromptForm[K]
   ) {
     setForm((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-    setLocalSaveMessage("Saving...");
-  }
-
-  function updateChannel(
-    id: string,
-    key: keyof ListingChannel,
-    value: boolean | string
-  ) {
-    setChannels((prev) =>
-      prev.map((channel) =>
-        channel.id === id
-          ? {
-              ...channel,
-              [key]: value,
-            }
-          : channel
-      )
-    );
-    setLocalSaveMessage("Saving...");
-  }
-
-  function updateGeneratedCopy<K extends keyof GeneratedListingCopy>(
-    key: K,
-    value: GeneratedListingCopy[K]
-  ) {
-    setGeneratedCopy((prev) => ({
       ...prev,
       [key]: value,
     }));
@@ -156,17 +76,6 @@ export default function ListHomePage() {
         ...(saved.form || {}),
       });
 
-      if (Array.isArray(saved.channels) && saved.channels.length > 0) {
-        setChannels(saved.channels);
-      }
-
-      if (saved.generatedCopy) {
-        setGeneratedCopy({
-          ...initialGeneratedCopy,
-          ...saved.generatedCopy,
-        });
-      }
-
       setDraftId(saved.draftId ?? null);
     }
 
@@ -183,8 +92,6 @@ export default function ListHomePage() {
         progressPatch: {
           listHome: {
             form,
-            channels,
-            generatedCopy,
             draftId,
           },
         },
@@ -194,62 +101,53 @@ export default function ListHomePage() {
     }, 800);
 
     return () => clearTimeout(timeout);
-  }, [form, channels, generatedCopy, draftId, saveProfile]);
+  }, [form, draftId, saveProfile]);
 
-  const plannedChannelsCount = useMemo(
-    () => channels.filter((channel) => channel.planned).length,
-    [channels]
-  );
+  const completedFields = useMemo(() => {
+    return Object.values(form).filter((value) => value.trim().length > 0).length;
+  }, [form]);
 
-  const headlineReady = form.listingHeadline.trim().length > 0;
-  const descriptionReady = form.publicDescription.trim().length > 0;
-  const showingReady =
-    form.showingMode !== "" && form.showingInstructions.trim().length > 0;
-  const listDateReady = form.listDate.trim().length > 0;
+  const listingPrompt = useMemo(() => buildListingPrompt(form), [form]);
 
-  const readinessScore = useMemo(() => {
-    let score = 0;
-    if (headlineReady) score += 1;
-    if (descriptionReady) score += 1;
-    if (showingReady) score += 1;
-    if (listDateReady) score += 1;
-    if (plannedChannelsCount > 0) score += 1;
-    return score;
-  }, [headlineReady, descriptionReady, showingReady, listDateReady, plannedChannelsCount]);
-
-  const readinessLabel = useMemo(() => {
-    if (readinessScore <= 1) return "Just getting started";
-    if (readinessScore <= 3) return "Partially ready";
-    if (readinessScore <= 4) return "Nearly ready";
-    return "Ready to list";
-  }, [readinessScore]);
+  async function handleCopyPrompt() {
+    try {
+      await navigator.clipboard.writeText(listingPrompt);
+      setCopyMessage("Prompt copied.");
+      setTimeout(() => setCopyMessage(""), 2500);
+    } catch (err) {
+      console.error(err);
+      setCopyMessage("Unable to copy prompt.");
+      setTimeout(() => setCopyMessage(""), 2500);
+    }
+  }
 
   async function handleSaveDraft() {
     try {
       setIsWorking(true);
 
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
       const nextDraftId = draftId || `list-home-${Date.now()}`;
-      setDraftId(nextDraftId);
 
       const result = await saveProfile({
         currentStep: "list-home",
         progressPatch: {
           listHome: {
             form,
-            channels,
-            generatedCopy,
             draftId: nextDraftId,
           },
         },
       });
 
-      setLocalSaveMessage(result ? "Saved" : "Save failed");
-      alert("Listing draft saved.");
+      if (result) {
+        setDraftId(nextDraftId);
+        setLocalSaveMessage("Saved");
+        alert("List-home draft saved.");
+      } else {
+        setLocalSaveMessage("Save failed");
+        alert("Unable to save your draft.");
+      }
     } catch (err) {
       console.error(err);
-      alert("Unable to save listing draft.");
+      alert("Unable to save your draft.");
     } finally {
       setIsWorking(false);
     }
@@ -266,8 +164,6 @@ export default function ListHomePage() {
         progressPatch: {
           listHome: {
             form,
-            channels,
-            generatedCopy,
             draftId,
           },
         },
@@ -289,63 +185,11 @@ export default function ListHomePage() {
     }
   }
 
-  async function handleGenerateCopy() {
-    try {
-      setIsGenerating(true);
-
-      const setPriceForm = profile?.progress?.setPrice?.form || {};
-      const marketingForm = profile?.progress?.prepareMarketing?.form || {};
-
-      const generated = buildGeneratedListingCopy({
-        listHomeForm: form,
-        setPriceForm,
-        marketingForm,
-      });
-
-      setGeneratedCopy(generated);
-      setLocalSaveMessage("Saving...");
-
-      const result = await saveProfile({
-        currentStep: "list-home",
-        progressPatch: {
-          listHome: {
-            form,
-            channels,
-            generatedCopy: generated,
-            draftId,
-          },
-        },
-      });
-
-      setLocalSaveMessage(result ? "Saved" : "Save failed");
-    } catch (err) {
-      console.error(err);
-      alert("Unable to generate listing copy right now.");
-    } finally {
-      setIsGenerating(false);
-    }
-  }
-
-  function useGeneratedHeadline() {
-    if (!generatedCopy.headline.trim()) return;
-    updateForm("listingHeadline", generatedCopy.headline);
-  }
-
-  function useGeneratedPublicDescription() {
-    if (!generatedCopy.publicDescription.trim()) return;
-    updateForm("publicDescription", generatedCopy.publicDescription);
-  }
-
-  function useGeneratedMlsRemarks() {
-    if (!generatedCopy.mlsRemarks.trim()) return;
-    updateForm("mlsDescriptionDraft", generatedCopy.mlsRemarks);
-  }
-
   if (loading) {
     return (
       <div style={{ maxWidth: "1180px", paddingTop: "24px" }}>
         <p style={{ color: "var(--ackret-muted)", fontSize: "16px" }}>
-          Loading your listing step...
+          Loading your list-home step...
         </p>
       </div>
     );
@@ -387,71 +231,26 @@ export default function ListHomePage() {
           color: "var(--ackret-muted)",
         }}
       >
-        Turn your pricing decision into a real listing plan. Decide where the
-        home will be posted, how buyers will schedule showings, what details
-        will appear publicly, and what listing terms you want in place before
-        offers arrive.
+        Build your listing materials, take strong photos, and get ready to post
+        the property. This page gives you a fill-in-the-blank prompt you can
+        paste into ChatGPT or another AI writing tool to generate your home
+        description.
       </p>
 
       <div
         style={{
           marginTop: "28px",
           display: "grid",
-          gridTemplateColumns: "0.9fr 1.6fr 0.8fr",
+          gridTemplateColumns: "1.65fr 0.8fr",
           gap: "24px",
           alignItems: "start",
         }}
       >
-        <div style={{ display: "grid", gap: "20px", position: "sticky", top: 24 }}>
-          <Card>
-            <SectionHeading eyebrow="Readiness" title="Listing status" />
-
-            <StatRow label="Listing channels planned" value={`${plannedChannelsCount}`} />
-            <StatRow label="Headline drafted" value={headlineReady ? "Yes" : "No"} />
-            <StatRow label="Description drafted" value={descriptionReady ? "Yes" : "No"} />
-            <StatRow label="Showing plan set" value={showingReady ? "Yes" : "No"} />
-            <StatRow label="Planned list date" value={listDateReady ? "Yes" : "No"} />
-            <StatRow label="Overall status" value={readinessLabel} last />
-          </Card>
-        </div>
-
         <div style={{ display: "grid", gap: "24px" }}>
           <Card>
             <SectionHeading
-              eyebrow="Listing Summary"
-              title="What your listing is shaping up to be"
-            />
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                gap: "18px",
-              }}
-            >
-              <SummaryTile
-                label="Planned list date"
-                value={form.listDate || "Not set"}
-              />
-              <SummaryTile
-                label="Showing setup"
-                value={showingModeLabel(form.showingMode)}
-              />
-              <SummaryTile
-                label="Occupancy"
-                value={occupancyLabel(form.occupancyStatus)}
-              />
-              <SummaryTile
-                label="Offer deadline"
-                value={form.offerDeadline || "No deadline set"}
-              />
-            </div>
-          </Card>
-
-          <Card>
-            <SectionHeading
-              eyebrow="Generate My Listing Copy"
-              title="Let Ackret draft your first version"
+              eyebrow="Home Description Prompt"
+              title="Fill in the blanks for your AI listing prompt"
             />
 
             <p
@@ -463,75 +262,10 @@ export default function ListHomePage() {
                 color: "var(--ackret-muted)",
               }}
             >
-              Ackret can turn the information you’ve entered into a polished
-              headline, listing description, MLS-style remarks, and a short
-              social post. Review and edit everything before publishing.
+              Fill out the details below. Then copy the finished prompt and paste
+              it into ChatGPT or any other AI writing software to create a
+              polished listing description.
             </p>
-
-            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "20px" }}>
-              <button
-                type="button"
-                onClick={handleGenerateCopy}
-                style={primaryButtonInlineStyle}
-                disabled={isGenerating || saving}
-              >
-                {isGenerating ? "Generating..." : "Generate Listing Draft"}
-              </button>
-
-              <button
-                type="button"
-                onClick={handleGenerateCopy}
-                style={secondaryInlineButtonStyle}
-                disabled={isGenerating || saving}
-              >
-                Regenerate
-              </button>
-            </div>
-
-            <div style={{ display: "grid", gap: "18px" }}>
-              <GeneratedCopyBox
-                label="Generated Headline"
-                value={generatedCopy.headline}
-                onChange={(value) => updateGeneratedCopy("headline", value)}
-                rows={2}
-                buttonLabel="Use Headline"
-                onUse={useGeneratedHeadline}
-              />
-
-              <GeneratedCopyBox
-                label="Generated Public Description"
-                value={generatedCopy.publicDescription}
-                onChange={(value) =>
-                  updateGeneratedCopy("publicDescription", value)
-                }
-                rows={7}
-                buttonLabel="Use Public Description"
-                onUse={useGeneratedPublicDescription}
-              />
-
-              <GeneratedCopyBox
-                label="Generated MLS Remarks"
-                value={generatedCopy.mlsRemarks}
-                onChange={(value) => updateGeneratedCopy("mlsRemarks", value)}
-                rows={6}
-                buttonLabel="Use MLS Remarks"
-                onUse={useGeneratedMlsRemarks}
-              />
-
-              <GeneratedCopyBox
-                label="Generated Social Post"
-                value={generatedCopy.socialPost}
-                onChange={(value) => updateGeneratedCopy("socialPost", value)}
-                rows={4}
-              />
-            </div>
-          </Card>
-
-          <Card>
-            <SectionHeading
-              eyebrow="Public Listing Content"
-              title="Write the listing buyers will see"
-            />
 
             <div
               style={{
@@ -541,36 +275,115 @@ export default function ListHomePage() {
               }}
             >
               <Field
-                label="Listing Headline"
-                value={form.listingHeadline}
-                onChange={(value) => updateForm("listingHeadline", value)}
-                placeholder="Example: Updated 3-bedroom ranch near downtown Elkhorn"
+                label="Location (City, State)"
+                value={form.cityState}
+                onChange={(value) => updateForm("cityState", value)}
+                placeholder="Example: Elkhorn, Wisconsin"
+              />
+
+              <Field
+                label="Price"
+                value={form.price}
+                onChange={(value) => updateForm("price", value)}
+                placeholder="Example: $425,000"
+              />
+
+              <Field
+                label="Bedrooms"
+                value={form.bedrooms}
+                onChange={(value) => updateForm("bedrooms", value)}
+                placeholder="Example: 4"
+              />
+
+              <Field
+                label="Bathrooms"
+                value={form.bathrooms}
+                onChange={(value) => updateForm("bathrooms", value)}
+                placeholder="Example: 2.5"
+              />
+
+              <Field
+                label="Square Footage"
+                value={form.squareFootage}
+                onChange={(value) => updateForm("squareFootage", value)}
+                placeholder="Example: 2,350"
+              />
+
+              <Field
+                label="Lot Size"
+                value={form.lotSize}
+                onChange={(value) => updateForm("lotSize", value)}
+                placeholder="Example: 0.42 acres"
+              />
+
+              <TextAreaField
+                label="Home Features"
+                value={form.homeFeatures}
+                onChange={(value) => updateForm("homeFeatures", value)}
+                placeholder="Updated kitchen, hardwood floors, finished basement, new roof"
+                rows={4}
                 fullWidth
               />
 
               <TextAreaField
-                label="Public Description"
-                value={form.publicDescription}
-                onChange={(value) => updateForm("publicDescription", value)}
-                placeholder="Describe what makes the home appealing, who it is ideal for, and the biggest selling points."
-                rows={6}
+                label="Kitchen Details"
+                value={form.kitchenDetails}
+                onChange={(value) => updateForm("kitchenDetails", value)}
+                placeholder="Granite countertops, stainless steel appliances, open concept"
+                rows={4}
                 fullWidth
               />
 
               <TextAreaField
-                label="MLS Description Draft"
-                value={form.mlsDescriptionDraft}
-                onChange={(value) => updateForm("mlsDescriptionDraft", value)}
-                placeholder="Shorter, more structured listing copy for MLS input."
-                rows={5}
+                label="Living Areas"
+                value={form.livingAreas}
+                onChange={(value) => updateForm("livingAreas", value)}
+                placeholder="Natural light, fireplace, vaulted ceilings"
+                rows={4}
                 fullWidth
               />
 
               <TextAreaField
-                label="Private Listing Notes"
-                value={form.privateNotes}
-                onChange={(value) => updateForm("privateNotes", value)}
-                placeholder="Anything you want to remember internally before posting."
+                label="Primary Bedroom"
+                value={form.primaryBedroom}
+                onChange={(value) => updateForm("primaryBedroom", value)}
+                placeholder="Walk-in closet, en-suite bathroom"
+                rows={4}
+                fullWidth
+              />
+
+              <TextAreaField
+                label="Outdoor Space"
+                value={form.outdoorSpace}
+                onChange={(value) => updateForm("outdoorSpace", value)}
+                placeholder="Fenced yard, patio, deck, lake view"
+                rows={4}
+                fullWidth
+              />
+
+              <TextAreaField
+                label="Location Highlights"
+                value={form.locationHighlights}
+                onChange={(value) => updateForm("locationHighlights", value)}
+                placeholder="Near schools, downtown, lake, golf course"
+                rows={4}
+                fullWidth
+              />
+
+              <TextAreaField
+                label="Recent Updates"
+                value={form.recentUpdates}
+                onChange={(value) => updateForm("recentUpdates", value)}
+                placeholder="New furnace, new roof, remodeled bathroom"
+                rows={4}
+                fullWidth
+              />
+
+              <TextAreaField
+                label="Additional Notes"
+                value={form.additionalNotes}
+                onChange={(value) => updateForm("additionalNotes", value)}
+                placeholder="Anything unique or special about the home"
                 rows={4}
                 fullWidth
               />
@@ -579,249 +392,151 @@ export default function ListHomePage() {
 
           <Card>
             <SectionHeading
-              eyebrow="Posting Plan"
-              title="Where will the listing appear?"
+              eyebrow="Copy and Paste"
+              title="Your finished prompt"
+            />
+
+            <p
+              style={{
+                marginTop: 0,
+                marginBottom: "18px",
+                fontSize: "15px",
+                lineHeight: 1.8,
+                color: "var(--ackret-muted)",
+              }}
+            >
+              Copy this prompt and paste it into ChatGPT or another AI writing
+              tool. Then bring the description back into your listing workflow.
+            </p>
+
+            <textarea
+              value={listingPrompt}
+              readOnly
+              rows={22}
+              style={textareaStyle}
+            />
+
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                flexWrap: "wrap",
+                marginTop: "18px",
+                alignItems: "center",
+              }}
+            >
+              <button
+                type="button"
+                onClick={handleCopyPrompt}
+                style={primaryButtonInlineStyle}
+              >
+                Copy Prompt
+              </button>
+
+              {copyMessage ? (
+                <span
+                  style={{
+                    fontSize: "14px",
+                    color: "var(--ackret-muted)",
+                  }}
+                >
+                  {copyMessage}
+                </span>
+              ) : null}
+            </div>
+          </Card>
+
+          <Card>
+            <SectionHeading
+              eyebrow="Photography"
+              title="How to take listing photos that look clean and professional"
             />
 
             <div style={{ display: "grid", gap: "16px" }}>
-              {channels.map((channel) => (
-                <div
-                  key={channel.id}
-                  style={{
-                    border: "1px solid rgba(22,58,112,0.10)",
-                    borderRadius: "18px",
-                    padding: "18px",
-                    background: "#fbfbf9",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: "16px",
-                      alignItems: "center",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: "16px",
-                        lineHeight: 1.5,
-                        color: "var(--ackret-ink)",
-                        fontWeight: 500,
-                      }}
-                    >
-                      {channel.label}
-                    </div>
-
-                    <label
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        fontSize: "13px",
-                        color: "var(--ackret-muted)",
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={channel.planned}
-                        onChange={(e) =>
-                          updateChannel(channel.id, "planned", e.target.checked)
-                        }
-                      />
-                      Planned
-                    </label>
-                  </div>
-
-                  <div style={{ marginTop: "14px" }}>
-                    <TextAreaField
-                      label="Notes"
-                      value={channel.notes}
-                      onChange={(value) => updateChannel(channel.id, "notes", value)}
-                      placeholder="Add posting details, timing, or anything you need to remember for this channel."
-                      rows={3}
-                      fullWidth
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card>
-            <SectionHeading
-              eyebrow="Showing Plan"
-              title="Decide how buyers will view the home"
-            />
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                gap: "18px",
-              }}
-            >
-              <Field
-                label="Planned List Date"
-                type="date"
-                value={form.listDate}
-                onChange={(value) => updateForm("listDate", value)}
+              <InstructionBlock
+                title="1. Clean and declutter first"
+                body="Clear countertops, hide trash cans, put away pet items, straighten pillows, and remove anything that makes a room feel crowded. Simple and clean always photographs better."
               />
-
-              <Field
-                label="Available for Showings Starting"
-                type="date"
-                value={form.availableDate}
-                onChange={(value) => updateForm("availableDate", value)}
+              <InstructionBlock
+                title="2. Shoot during bright daylight"
+                body="Open all blinds and curtains. Turn on interior lights if the room feels dark, but avoid taking photos at night unless you are intentionally capturing exterior lighting."
               />
-
-              <SelectField
-                label="Showing Mode"
-                value={form.showingMode}
-                onChange={(value) =>
-                  updateForm("showingMode", value as ListingReadinessState["showingMode"])
-                }
-                options={[
-                  { value: "open-house", label: "Open houses only" },
-                  { value: "appointment", label: "By appointment only" },
-                  { value: "flexible", label: "Flexible / mixed approach" },
-                ]}
+              <InstructionBlock
+                title="3. Use horizontal photos"
+                body="Take wide, level photos in landscape orientation. This gives buyers a better sense of the room layout and tends to work better on MLS sites."
               />
-
-              <SelectField
-                label="Occupancy Status"
-                value={form.occupancyStatus}
-                onChange={(value) =>
-                  updateForm(
-                    "occupancyStatus",
-                    value as ListingReadinessState["occupancyStatus"]
-                  )
-                }
-                options={[
-                  { value: "owner-occupied", label: "Owner occupied" },
-                  { value: "vacant", label: "Vacant" },
-                  { value: "tenant-occupied", label: "Tenant occupied" },
-                ]}
+              <InstructionBlock
+                title="4. Stand in corners, not doorways"
+                body="Whenever possible, stand back into a corner to show more of the room. Keep the camera level and avoid extreme angles that make rooms look distorted."
               />
-
-              <SelectField
-                label="Plan to use a lockbox?"
-                value={form.lockboxPlan}
-                onChange={(value) =>
-                  updateForm("lockboxPlan", value as ListingReadinessState["lockboxPlan"])
-                }
-                options={[
-                  { value: "yes", label: "Yes" },
-                  { value: "no", label: "No" },
-                ]}
+              <InstructionBlock
+                title="5. Photograph the key spaces"
+                body="At minimum, get strong photos of the front exterior, kitchen, living room, primary bedroom, bathrooms, backyard, and any standout features like a fireplace, deck, finished basement, barn, or lake view."
               />
-
-              <SelectField
-                label="Plan to use a yard sign?"
-                value={form.yardSignPlan}
-                onChange={(value) =>
-                  updateForm("yardSignPlan", value as ListingReadinessState["yardSignPlan"])
-                }
-                options={[
-                  { value: "yes", label: "Yes" },
-                  { value: "no", label: "No" },
-                ]}
-              />
-
-              <SelectField
-                label="Post online yourself?"
-                value={form.onlinePostingPlan}
-                onChange={(value) =>
-                  updateForm(
-                    "onlinePostingPlan",
-                    value as ListingReadinessState["onlinePostingPlan"]
-                  )
-                }
-                options={[
-                  { value: "yes", label: "Yes" },
-                  { value: "no", label: "No" },
-                ]}
-              />
-
-              <Field
-                label="Offer Deadline"
-                type="date"
-                value={form.offerDeadline}
-                onChange={(value) => updateForm("offerDeadline", value)}
-              />
-
-              <TextAreaField
-                label="Showing Instructions"
-                value={form.showingInstructions}
-                onChange={(value) => updateForm("showingInstructions", value)}
-                placeholder="Example: 24-hour notice required. Remove dog before showings. Weekend afternoons preferred."
-                rows={5}
-                fullWidth
+              <InstructionBlock
+                title="6. Take more photos than you think you need"
+                body="Take multiple versions of every room. Then choose the cleanest, brightest, and most flattering one. Do not use blurry, crooked, or dark photos."
               />
             </div>
           </Card>
 
           <Card>
             <SectionHeading
-              eyebrow="Listing Terms"
-              title="Decide what goes with the sale and how offers should be framed"
+              eyebrow="MLS Posting"
+              title="General directions for getting your property onto the MLS"
             />
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                gap: "18px",
-              }}
-            >
-              <Field
-                label="Buyer Agent Commission Plan"
-                value={form.buyerAgentCommissionPlan}
-                onChange={(value) => updateForm("buyerAgentCommissionPlan", value)}
-                placeholder="Example: 2.4%, flat fee, or case-by-case"
-                fullWidth
+            <div style={{ display: "grid", gap: "16px" }}>
+              <InstructionBlock
+                title="1. Choose a flat-fee MLS service"
+                body="Most FSBO sellers need a flat-fee MLS listing service because individual homeowners usually cannot post directly to the MLS on their own. Look for one that covers your Wisconsin market."
               />
-
-              <TextAreaField
-                label="Included in Sale"
-                value={form.inclusions}
-                onChange={(value) => updateForm("inclusions", value)}
-                placeholder="Appliances, window treatments, shed, playset, dock, etc."
-                rows={4}
-                fullWidth
+              <InstructionBlock
+                title="2. Gather your listing information"
+                body="Before starting, have your price, square footage, room counts, property taxes, inclusions, exclusions, showing instructions, and completed disclosure forms ready."
               />
-
-              <TextAreaField
-                label="Excluded from Sale"
-                value={form.exclusions}
-                onChange={(value) => updateForm("exclusions", value)}
-                placeholder="Anything the seller intends to keep."
-                rows={4}
-                fullWidth
+              <InstructionBlock
+                title="3. Upload your best photos"
+                body="Use your cleanest exterior shot as the lead image. Then upload the strongest interior photos in a logical order so buyers can understand the flow of the home."
               />
-
-              <TextAreaField
-                label="Financing / Offer Notes"
-                value={form.financingNotes}
-                onChange={(value) => updateForm("financingNotes", value)}
-                placeholder="Cash preferred, proof of funds required, pre-approval requested, closing flexibility, etc."
-                rows={4}
-                fullWidth
+              <InstructionBlock
+                title="4. Paste in your home description"
+                body="Use the prompt above to create your listing description, then edit it so it is accurate and clear. Make sure you do not exaggerate features or promise something that is not true."
+              />
+              <InstructionBlock
+                title="5. Review buyer-agent compensation and showing setup"
+                body="Your MLS entry may ask how showings are handled and whether buyer agents will be compensated. Make those decisions before submitting the listing."
+              />
+              <InstructionBlock
+                title="6. Double-check everything before it goes live"
+                body="Review spelling, price, room counts, included items, school information, and photo order. Small mistakes can make the property look sloppy or create confusion with buyers."
               />
             </div>
+
+            <p
+              style={{
+                marginTop: "18px",
+                marginBottom: 0,
+                fontSize: "14px",
+                lineHeight: 1.8,
+                color: "var(--ackret-muted)",
+              }}
+            >
+              Ackret gives general guidance here. Your flat-fee MLS provider may
+              have its own required fields, timelines, and submission process.
+            </p>
           </Card>
         </div>
 
         <div style={{ display: "grid", gap: "20px", position: "sticky", top: 24 }}>
           <Card>
-            <SectionHeading eyebrow="Progress" title="Listing checklist" />
+            <SectionHeading eyebrow="Progress" title="List-home status" />
 
-            <StatRow label="Channels planned" value={`${plannedChannelsCount}`} />
-            <StatRow label="Headline drafted" value={headlineReady ? "Yes" : "No"} />
-            <StatRow label="Description drafted" value={descriptionReady ? "Yes" : "No"} />
-            <StatRow label="Showing plan" value={showingReady ? "Ready" : "Not ready"} />
-            <StatRow label="List date" value={form.listDate || "Not set"} />
-            <StatRow label="Generated copy" value={generatedCopy.headline ? "Ready" : "Not generated"} />
+            <StatRow label="Filled fields" value={`${completedFields} / 14`} />
+            <StatRow
+              label="Prompt ready"
+              value={completedFields >= 6 ? "Yes" : "In progress"}
+            />
             <StatRow label="Save status" value={saving ? "Saving..." : localSaveMessage} />
             <StatRow
               label="Draft status"
@@ -879,8 +594,8 @@ export default function ListHomePage() {
                   color: "var(--ackret-muted)",
                 }}
               >
-                This step is about making your listing feel intentional before it
-                goes public — not just posting it quickly.
+                This step is meant to make your listing feel polished before it
+                goes public.
               </p>
             )}
           </Card>
@@ -890,267 +605,53 @@ export default function ListHomePage() {
   );
 }
 
-function GeneratedCopyBox({
-  label,
-  value,
-  onChange,
-  rows,
-  buttonLabel,
-  onUse,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  rows: number;
-  buttonLabel?: string;
-  onUse?: () => void;
-}) {
-  return (
-    <div
-      style={{
-        border: "1px solid rgba(22,58,112,0.10)",
-        borderRadius: "18px",
-        padding: "18px",
-        background: "#fbfbf9",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: "12px",
-          alignItems: "center",
-          marginBottom: "12px",
-          flexWrap: "wrap",
-        }}
-      >
-        <div
-          style={{
-            fontSize: "12px",
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-            color: "var(--ackret-gold-dark)",
-          }}
-        >
-          {label}
-        </div>
+function buildListingPrompt(form: ListingPromptForm) {
+  return `Write a professional real estate listing description for a home using the details below. The tone should be polished, inviting, and similar to what a top real estate agent would write. Avoid sounding robotic. Highlight lifestyle benefits, not just features.
 
-        {buttonLabel && onUse ? (
-          <button
-            type="button"
-            onClick={onUse}
-            style={smallGhostButtonStyle}
-          >
-            {buttonLabel}
-          </button>
-        ) : null}
-      </div>
+Property Details:
 
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        rows={rows}
-        style={textareaStyle}
-        placeholder="Generate a draft to populate this section."
-      />
-    </div>
-  );
+* Location (City, State): ${valueOrPlaceholder(form.cityState)}
+* Price: ${valueOrPlaceholder(form.price)}
+* Bedrooms: ${valueOrPlaceholder(form.bedrooms)}
+* Bathrooms: ${valueOrPlaceholder(form.bathrooms)}
+* Square Footage: ${valueOrPlaceholder(form.squareFootage)}
+* Lot Size: ${valueOrPlaceholder(form.lotSize)}
+
+Home Features:
+${valueOrPlaceholder(form.homeFeatures)}
+
+Kitchen Details:
+${valueOrPlaceholder(form.kitchenDetails)}
+
+Living Areas:
+${valueOrPlaceholder(form.livingAreas)}
+
+Primary Bedroom:
+${valueOrPlaceholder(form.primaryBedroom)}
+
+Outdoor Space:
+${valueOrPlaceholder(form.outdoorSpace)}
+
+Location Highlights:
+${valueOrPlaceholder(form.locationHighlights)}
+
+Recent Updates:
+${valueOrPlaceholder(form.recentUpdates)}
+
+Additional Notes:
+${valueOrPlaceholder(form.additionalNotes)}
+
+Instructions:
+
+* Start with a strong, attention-grabbing opening sentence
+* Keep it around 150–250 words
+* Make it feel warm and aspirational
+* Avoid bullet points — write in paragraph form
+* End with a subtle call to action (e.g. “schedule your showing today”)`;
 }
 
-function showingModeLabel(value: ShowingMode): string {
-  if (value === "open-house") return "Open houses only";
-  if (value === "appointment") return "By appointment";
-  if (value === "flexible") return "Flexible";
-  return "Not set";
-}
-
-function occupancyLabel(value: ListingReadinessState["occupancyStatus"]): string {
-  if (value === "owner-occupied") return "Owner occupied";
-  if (value === "vacant") return "Vacant";
-  if (value === "tenant-occupied") return "Tenant occupied";
-  return "Not set";
-}
-
-function buildGeneratedListingCopy({
-  listHomeForm,
-  setPriceForm,
-  marketingForm,
-}: {
-  listHomeForm: ListingReadinessState;
-  setPriceForm: Record<string, unknown>;
-  marketingForm: Record<string, unknown>;
-}): GeneratedListingCopy {
-  const subjectBeds = cleanString(setPriceForm.subjectBeds);
-  const subjectBaths = cleanString(setPriceForm.subjectBaths);
-  const subjectSqft = cleanString(setPriceForm.subjectSqft);
-  const subjectCondition = cleanString(setPriceForm.subjectCondition);
-  const upgrades = cleanString(setPriceForm.upgrades);
-  const defects = cleanString(setPriceForm.defects);
-  const finalListPrice = cleanString(setPriceForm.finalListPrice);
-  const propertyHighlights =
-    cleanString(marketingForm.propertyHighlights) || cleanString(listHomeForm.privateNotes);
-  const idealBuyer = cleanString(marketingForm.idealBuyer);
-  const neighborhoodHighlights = cleanString(marketingForm.neighborhoodHighlights);
-
-  const occupancy = occupancyLabel(listHomeForm.occupancyStatus);
-  const showing = showingModeLabel(listHomeForm.showingMode);
-
-  const homeFacts = compactJoin([
-    subjectBeds ? `${subjectBeds}-bedroom` : "",
-    subjectBaths ? `${subjectBaths}-bath` : "",
-    subjectSqft ? `${subjectSqft} sq ft` : "",
-  ]);
-
-  const headlineParts = [
-    cleanHeadlinePiece(listHomeForm.listingHeadline),
-    cleanHeadlinePiece(propertyHighlights?.split(".")[0] || ""),
-    cleanHeadlinePiece(neighborhoodHighlights?.split(".")[0] || ""),
-  ].filter(Boolean);
-
-  const generatedHeadline =
-    headlineParts[0] ||
-    compactJoin([
-      homeFacts,
-      subjectCondition ? conditionLabel(subjectCondition) : "",
-      "home",
-    ]) ||
-    "Well-prepared Wisconsin home ready to list";
-
-  const publicParagraphs: string[] = [];
-
-  publicParagraphs.push(
-    sentenceJoin([
-      "This home offers",
-      homeFacts || "a strong overall layout",
-      subjectCondition ? `with a ${conditionLabel(subjectCondition).toLowerCase()} feel` : "",
-      finalListPrice ? `and is positioned at ${formatCurrencyString(finalListPrice)}` : "",
-    ])
-  );
-
-  if (propertyHighlights) {
-    publicParagraphs.push(
-      sentenceJoin([
-        "Standout features include",
-        propertyHighlights,
-      ])
-    );
-  }
-
-  if (upgrades) {
-    publicParagraphs.push(
-      sentenceJoin([
-        "Recent updates or value-add features include",
-        upgrades,
-      ])
-    );
-  }
-
-  if (neighborhoodHighlights) {
-    publicParagraphs.push(
-      sentenceJoin([
-        "The location also offers",
-        neighborhoodHighlights,
-      ])
-    );
-  }
-
-  if (idealBuyer) {
-    publicParagraphs.push(
-      sentenceJoin([
-        "This property may especially appeal to buyers looking for",
-        idealBuyer,
-      ])
-    );
-  }
-
-  publicParagraphs.push(
-    sentenceJoin([
-      "Showings are planned as",
-      showing.toLowerCase(),
-      listHomeForm.showingInstructions ? `with notes including ${listHomeForm.showingInstructions}` : "",
-    ])
-  );
-
-  if (listHomeForm.inclusions) {
-    publicParagraphs.push(
-      sentenceJoin([
-        "Included with the sale",
-        listHomeForm.inclusions,
-      ])
-    );
-  }
-
-  const publicDescription = publicParagraphs
-    .filter(Boolean)
-    .map(ensureSentence)
-    .join(" ");
-
-  const mlsBits = [
-    homeFacts,
-    subjectCondition ? conditionLabel(subjectCondition) : "",
-    propertyHighlights,
-    upgrades ? `Updates include ${upgrades}` : "",
-    neighborhoodHighlights ? `Nearby highlights: ${neighborhoodHighlights}` : "",
-    listHomeForm.inclusions ? `Included: ${listHomeForm.inclusions}` : "",
-    listHomeForm.exclusions ? `Exclusions: ${listHomeForm.exclusions}` : "",
-    finalListPrice ? `List price target: ${formatCurrencyString(finalListPrice)}` : "",
-  ].filter(Boolean);
-
-  const mlsRemarks = ensureSentence(
-    mlsBits.join(". ").replace(/\.\./g, ".")
-  );
-
-  const socialPost = ensureSentence(
-    compactJoin([
-      generatedHeadline,
-      finalListPrice ? `Offered at ${formatCurrencyString(finalListPrice)}.` : "",
-      propertyHighlights ? `${propertyHighlights}.` : "",
-      neighborhoodHighlights ? `${neighborhoodHighlights}.` : "",
-      listHomeForm.listDate ? `Planned to hit the market ${listHomeForm.listDate}.` : "",
-    ])
-  );
-
-  return {
-    headline: generatedHeadline,
-    publicDescription,
-    mlsRemarks,
-    socialPost,
-  };
-}
-
-function cleanString(value: unknown): string {
-  if (typeof value !== "string") return "";
-  return value.trim();
-}
-
-function compactJoin(parts: string[]) {
-  return parts.filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
-}
-
-function sentenceJoin(parts: string[]) {
-  return parts
-    .filter(Boolean)
-    .join(" ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function ensureSentence(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) return "";
-  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
-}
-
-function cleanHeadlinePiece(value: string) {
-  return value.replace(/\.+$/, "").trim();
-}
-
-function conditionLabel(value: string) {
-  if (value === "needs-work") return "Needs-work";
-  if (value === "average") return "Well-kept";
-  if (value === "updated") return "Updated";
-  if (value === "fully-renovated") return "Fully renovated";
-  return "";
+function valueOrPlaceholder(value: string) {
+  return value.trim() || "[INSERT]";
 }
 
 function Card({ children }: { children: React.ReactNode }) {
@@ -1206,27 +707,64 @@ function SectionHeading({
   );
 }
 
+function InstructionBlock({
+  title,
+  body,
+}: {
+  title: string;
+  body: string;
+}) {
+  return (
+    <div
+      style={{
+        border: "1px solid rgba(22,58,112,0.10)",
+        borderRadius: "18px",
+        padding: "18px",
+        background: "#fbfbf9",
+      }}
+    >
+      <div
+        style={{
+          fontSize: "16px",
+          lineHeight: 1.5,
+          color: "var(--ackret-ink)",
+          fontWeight: 600,
+          marginBottom: "8px",
+        }}
+      >
+        {title}
+      </div>
+
+      <p
+        style={{
+          margin: 0,
+          fontSize: "15px",
+          lineHeight: 1.8,
+          color: "var(--ackret-muted)",
+        }}
+      >
+        {body}
+      </p>
+    </div>
+  );
+}
+
 function Field({
   label,
   value,
   onChange,
   placeholder,
-  type = "text",
-  fullWidth = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-  type?: string;
-  fullWidth?: boolean;
 }) {
   return (
     <label
       style={{
         display: "grid",
         gap: "8px",
-        gridColumn: fullWidth ? "1 / -1" : undefined,
       }}
     >
       <span
@@ -1241,52 +779,12 @@ function Field({
       </span>
 
       <input
-        type={type}
+        type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         style={inputStyle}
       />
-    </label>
-  );
-}
-
-function SelectField({
-  label,
-  value,
-  onChange,
-  options,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-}) {
-  return (
-    <label style={{ display: "grid", gap: "8px" }}>
-      <span
-        style={{
-          fontSize: "12px",
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
-          color: "var(--ackret-gold-dark)",
-        }}
-      >
-        {label}
-      </span>
-
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        style={inputStyle}
-      >
-        <option value="">Select one</option>
-        {options.map((option) => (
-          <option key={`${label}-${option.value}`} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
     </label>
   );
 }
@@ -1336,42 +834,6 @@ function TextAreaField({
   );
 }
 
-function SummaryTile({ label, value }: { label: string; value: string }) {
-  return (
-    <div
-      style={{
-        borderRadius: "18px",
-        padding: "18px",
-        background: "#fbfbf9",
-        border: "1px solid rgba(22,58,112,0.08)",
-      }}
-    >
-      <div
-        style={{
-          fontSize: "12px",
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
-          color: "var(--ackret-gold-dark)",
-        }}
-      >
-        {label}
-      </div>
-
-      <div
-        style={{
-          marginTop: "10px",
-          fontSize: "24px",
-          lineHeight: 1.2,
-          color: "var(--ackret-navy)",
-          fontWeight: 600,
-        }}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
-
 function StatRow({
   label,
   value,
@@ -1413,20 +875,6 @@ function StatRow({
       </span>
     </div>
   );
-}
-
-function formatCurrencyString(value: string): string {
-  const cleaned = value.replace(/[^0-9.]/g, "").trim();
-  if (!cleaned) return value;
-
-  const parsed = Number(cleaned);
-  if (!Number.isFinite(parsed)) return value;
-
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(parsed);
 }
 
 const inputStyle: React.CSSProperties = {
@@ -1496,19 +944,6 @@ const secondaryActionButtonStyle: React.CSSProperties = {
   textAlign: "center",
 };
 
-const secondaryInlineButtonStyle: React.CSSProperties = {
-  borderRadius: "999px",
-  padding: "12px 18px",
-  background: "#ffffff",
-  color: "var(--ackret-navy)",
-  border: "1px solid rgba(22,58,112,0.15)",
-  fontSize: "13px",
-  letterSpacing: "0.14em",
-  textTransform: "uppercase",
-  cursor: "pointer",
-  boxSizing: "border-box",
-};
-
 const secondaryButtonButtonStyle: React.CSSProperties = {
   width: "100%",
   borderRadius: "999px",
@@ -1521,17 +956,5 @@ const secondaryButtonButtonStyle: React.CSSProperties = {
   textTransform: "uppercase",
   textAlign: "center",
   boxSizing: "border-box",
-  cursor: "pointer",
-};
-
-const smallGhostButtonStyle: React.CSSProperties = {
-  borderRadius: "999px",
-  padding: "8px 12px",
-  background: "transparent",
-  color: "var(--ackret-muted)",
-  border: "1px solid rgba(22,58,112,0.12)",
-  fontSize: "11px",
-  letterSpacing: "0.1em",
-  textTransform: "uppercase",
   cursor: "pointer",
 };

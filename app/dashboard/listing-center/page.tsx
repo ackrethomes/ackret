@@ -45,6 +45,7 @@ export default function ListingCenterPage() {
 
   const [form, setForm] = useState<ListingCenterForm>(initialForm);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [saveMessage, setSaveMessage] = useState("Loading...");
   const hasLoadedRef = useRef(false);
@@ -64,6 +65,15 @@ export default function ListingCenterPage() {
     const fileArray = Array.from(files);
     setSelectedImages(fileArray);
   }
+
+  useEffect(() => {
+    const urls = selectedImages.map((file) => URL.createObjectURL(file));
+    setPreviewUrls(urls);
+
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [selectedImages]);
 
   useEffect(() => {
     if (!profile || hasLoadedRef.current) return;
@@ -251,81 +261,105 @@ export default function ListingCenterPage() {
                   justifyContent: "center",
                   padding: "24px",
                   textAlign: "center",
+                  overflow: "hidden",
+                  position: "relative",
                 }}
               >
-                <div>
-                  <div
+                {previewUrls[0] ? (
+                  <img
+                    src={previewUrls[0]}
+                    alt="Main listing preview"
                     style={{
-                      fontSize: "18px",
-                      color: "var(--ackret-navy)",
-                      fontWeight: 600,
-                      marginBottom: "14px",
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      borderRadius: "20px",
                     }}
-                  >
-                    Main Listing Photo Area
-                  </div>
-
-                  <>
-                    <button
-                      type="button"
-                      style={uploadButtonStyle}
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      Upload Pictures Here
-                    </button>
-
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      ref={fileInputRef}
-                      style={{ display: "none" }}
-                      onChange={handleImageUpload}
-                    />
-                  </>
-
-                  <p
-                    style={{
-                      marginTop: "14px",
-                      marginBottom: 0,
-                      fontSize: "14px",
-                      lineHeight: 1.7,
-                      color: "var(--ackret-muted)",
-                    }}
-                  >
-                    Later we can connect this button to real photo uploads.
-                  </p>
-
-                  {selectedImages.length > 0 && (
+                  />
+                ) : (
+                  <div>
                     <div
                       style={{
-                        marginTop: "16px",
-                        display: "grid",
-                        gap: "8px",
+                        fontSize: "18px",
+                        color: "var(--ackret-navy)",
+                        fontWeight: 600,
+                        marginBottom: "14px",
                       }}
                     >
-                      {selectedImages.map((file, index) => (
-                        <div
-                          key={index}
-                          style={{
-                            fontSize: "13px",
-                            color: "var(--ackret-muted)",
-                          }}
-                        >
-                          {file.name}
-                        </div>
-                      ))}
+                      Main Listing Photo Area
                     </div>
-                  )}
-                </div>
+
+                    <>
+                      <button
+                        type="button"
+                        style={uploadButtonStyle}
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        Upload Pictures Here
+                      </button>
+
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        ref={fileInputRef}
+                        style={{ display: "none" }}
+                        onChange={handleImageUpload}
+                      />
+                    </>
+
+                    <p
+                      style={{
+                        marginTop: "14px",
+                        marginBottom: 0,
+                        fontSize: "14px",
+                        lineHeight: 1.7,
+                        color: "var(--ackret-muted)",
+                      }}
+                    >
+                      Later we can connect this button to real photo uploads.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div style={{ display: "grid", gap: "16px" }}>
-                <SmallPhotoCard title="Kitchen Photo" />
-                <SmallPhotoCard title="Living Room Photo" />
-                <SmallPhotoCard title="Exterior / Feature Photo" />
+                <SmallPhotoCard
+                  title="Kitchen Photo"
+                  previewUrl={previewUrls[1]}
+                />
+                <SmallPhotoCard
+                  title="Living Room Photo"
+                  previewUrl={previewUrls[2]}
+                />
+                <SmallPhotoCard
+                  title="Exterior / Feature Photo"
+                  previewUrl={previewUrls[3]}
+                />
               </div>
             </div>
+
+            {selectedImages.length > 0 ? (
+              <div
+                style={{
+                  marginTop: "16px",
+                  display: "grid",
+                  gap: "8px",
+                }}
+              >
+                {selectedImages.map((file, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      fontSize: "13px",
+                      color: "var(--ackret-muted)",
+                    }}
+                  >
+                    {file.name}
+                  </div>
+                ))}
+              </div>
+            ) : null}
 
             <div style={{ marginTop: "24px" }}>
               <label style={labelStyle}>Listing Price</label>
@@ -487,6 +521,10 @@ export default function ListingCenterPage() {
               label="Listing description"
               value={form.listingDescription.trim() ? "Added" : "Missing"}
             />
+            <PreviewRow
+              label="Selected photos"
+              value={selectedImages.length ? `${selectedImages.length}` : "0"}
+            />
 
             {error ? (
               <p
@@ -515,7 +553,13 @@ export default function ListingCenterPage() {
   );
 }
 
-function SmallPhotoCard({ title }: { title: string }) {
+function SmallPhotoCard({
+  title,
+  previewUrl,
+}: {
+  title: string;
+  previewUrl?: string;
+}) {
   return (
     <div
       style={{
@@ -527,13 +571,26 @@ function SmallPhotoCard({ title }: { title: string }) {
         alignItems: "center",
         justifyContent: "center",
         textAlign: "center",
-        padding: "12px",
+        padding: previewUrl ? "0" : "12px",
         color: "var(--ackret-muted)",
         fontSize: "14px",
         lineHeight: 1.6,
+        overflow: "hidden",
       }}
     >
-      {title}
+      {previewUrl ? (
+        <img
+          src={previewUrl}
+          alt={title}
+          style={{
+            width: "100%",
+            height: "116px",
+            objectFit: "cover",
+          }}
+        />
+      ) : (
+        title
+      )}
     </div>
   );
 }

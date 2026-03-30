@@ -55,14 +55,14 @@ export default function ListingCenterPage() {
   ) {
     setForm((prev) => ({ ...prev, [key]: value }));
     setSaveMessage("Saving...");
+  }
 
   function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
-  const files = e.target.files;
-  if (!files) return;
+    const files = e.target.files;
+    if (!files) return;
 
-  const fileArray = Array.from(files);
-  setSelectedImages(fileArray);
-}
+    const fileArray = Array.from(files);
+    setSelectedImages(fileArray);
   }
 
   useEffect(() => {
@@ -86,21 +86,15 @@ export default function ListingCenterPage() {
         "",
       cityStateZip:
         saved?.form?.cityStateZip || listHomeForm?.cityState || "",
-      listingPrice:
-        saved?.form?.listingPrice || listHomeForm?.price || "",
-      bedrooms:
-        saved?.form?.bedrooms || listHomeForm?.bedrooms || "",
-      bathrooms:
-        saved?.form?.bathrooms || listHomeForm?.bathrooms || "",
-      squareFeet:
-        saved?.form?.squareFeet || listHomeForm?.squareFootage || "",
-      lotSize:
-        saved?.form?.lotSize || listHomeForm?.lotSize || "",
+      listingPrice: saved?.form?.listingPrice || listHomeForm?.price || "",
+      bedrooms: saved?.form?.bedrooms || listHomeForm?.bedrooms || "",
+      bathrooms: saved?.form?.bathrooms || listHomeForm?.bathrooms || "",
+      squareFeet: saved?.form?.squareFeet || listHomeForm?.squareFootage || "",
+      lotSize: saved?.form?.lotSize || listHomeForm?.lotSize || "",
       leadPaintUrl:
         saved?.form?.leadPaintUrl ||
         (conditionReportForm?.builtBefore1978 === "yes" ? "needed" : ""),
-      listingDescription:
-        saved?.form?.listingDescription || "",
+      listingDescription: saved?.form?.listingDescription || "",
     });
 
     hasLoadedRef.current = true;
@@ -272,23 +266,23 @@ export default function ListingCenterPage() {
                   </div>
 
                   <>
-  <button
-    type="button"
-    style={uploadButtonStyle}
-    onClick={() => fileInputRef.current?.click()}
-  >
-    Upload Pictures Here
-  </button>
+                    <button
+                      type="button"
+                      style={uploadButtonStyle}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      Upload Pictures Here
+                    </button>
 
-  <input
-    type="file"
-    multiple
-    accept="image/*"
-    ref={fileInputRef}
-    style={{ display: "none" }}
-    onChange={handleImageUpload}
-  />
-</>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      ref={fileInputRef}
+                      style={{ display: "none" }}
+                      onChange={handleImageUpload}
+                    />
+                  </>
 
                   <p
                     style={{
@@ -300,28 +294,29 @@ export default function ListingCenterPage() {
                     }}
                   >
                     Later we can connect this button to real photo uploads.
-{selectedImages.length > 0 && (
-  <div
-    style={{
-      marginTop: "16px",
-      display: "grid",
-      gap: "8px",
-    }}
-  >
-    {selectedImages.map((file, index) => (
-      <div
-        key={index}
-        style={{
-          fontSize: "13px",
-          color: "var(--ackret-muted)",
-        }}
-      >
-        {file.name}
-      </div>
-    ))}
-  </div>
-)}
                   </p>
+
+                  {selectedImages.length > 0 && (
+                    <div
+                      style={{
+                        marginTop: "16px",
+                        display: "grid",
+                        gap: "8px",
+                      }}
+                    >
+                      {selectedImages.map((file, index) => (
+                        <div
+                          key={index}
+                          style={{
+                            fontSize: "13px",
+                            color: "var(--ackret-muted)",
+                          }}
+                        >
+                          {file.name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -427,7 +422,9 @@ export default function ListingCenterPage() {
           </section>
         </div>
 
-        <div style={{ display: "grid", gap: "20px", position: "sticky", top: 24 }}>
+        <div
+          style={{ display: "grid", gap: "20px", position: "sticky", top: 24 }}
+        >
           <Card>
             <SectionHeading eyebrow="Documents" title="Listing Documents" />
 
@@ -481,10 +478,7 @@ export default function ListingCenterPage() {
           <Card>
             <SectionHeading eyebrow="Status" title="Progress" />
 
-            <PreviewRow
-              label="Documents"
-              value={`${completedDocs}/6`}
-            />
+            <PreviewRow label="Documents" value={`${completedDocs}/6`} />
             <PreviewRow
               label="Save status"
               value={saving ? "Saving..." : saveMessage}

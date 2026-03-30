@@ -101,42 +101,47 @@ export default function ListingCenterPage() {
     return () => clearTimeout(timeout);
   }, [form, saveProfile]);
 
-  const documentLinks = useMemo(
-    () => [
-      {
-        label: "Condition Report",
-        url: form.conditionReportUrl,
-      },
-      {
-        label: "Lead-Based Paint Disclosure",
-        url: form.leadPaintUrl,
-      },
-      {
-        label: "Photos Folder",
-        url: form.photosFolderUrl,
-      },
-      {
-        label: "Photo Gallery",
-        url: form.photoGalleryUrl,
-      },
-      {
-        label: "Floor Plan",
-        url: form.floorPlanUrl,
-      },
-      {
-        label: "Feature Sheet",
-        url: form.featureSheetUrl,
-      },
-    ],
-    [
-      form.conditionReportUrl,
-      form.leadPaintUrl,
-      form.photosFolderUrl,
-      form.photoGalleryUrl,
-      form.floorPlanUrl,
-      form.featureSheetUrl,
-    ]
-  );
+ const documentLinks = useMemo(() => {
+  const hasConditionReport =
+    profile?.progress?.conditionReport?.answers &&
+    Object.values(profile.progress.conditionReport.answers).some(
+      (a: any) => a.answer !== ""
+    );
+
+  return [
+    {
+      label: "Condition Report",
+      url: hasConditionReport ? "completed" : "",
+    },
+    {
+      label: "Lead-Based Paint Disclosure",
+      url: form.leadPaintUrl,
+    },
+    {
+      label: "Photos Folder",
+      url: form.photosFolderUrl,
+    },
+    {
+      label: "Photo Gallery",
+      url: form.photoGalleryUrl,
+    },
+    {
+      label: "Floor Plan",
+      url: form.floorPlanUrl,
+    },
+    {
+      label: "Feature Sheet",
+      url: form.featureSheetUrl,
+    },
+  ];
+}, [
+  profile,
+  form.leadPaintUrl,
+  form.photosFolderUrl,
+  form.photoGalleryUrl,
+  form.floorPlanUrl,
+  form.featureSheetUrl,
+]);
 
   const completedDocs = documentLinks.filter((item) => item.url.trim()).length;
 
@@ -161,7 +166,7 @@ export default function ListingCenterPage() {
           color: "var(--ackret-gold-dark)",
         }}
       >
-        Listing Center
+        Home Sale Hub
       </p>
 
       <h1
@@ -174,7 +179,7 @@ export default function ListingCenterPage() {
           fontWeight: 500,
         }}
       >
-        Your MLS-Style Listing Hub
+        Your Home Sale Headquarters
       </h1>
 
       <p
@@ -186,8 +191,8 @@ export default function ListingCenterPage() {
           color: "var(--ackret-muted)",
         }}
       >
-        Keep your home information, listing description, photos, and disclosure
-        links in one place so everything is organized before you publish.
+        This is the center of your home sale. Keep your documents, listing details,
+	photos, and notes all in one organized place.
       </p>
 
       <div
@@ -688,28 +693,64 @@ function DocumentLinkCard({
         <a
           href={url}
           target="_blank"
-          rel="noreferrer"
-          style={{
-            fontSize: "14px",
-            color: "var(--ackret-gold-dark)",
-            textDecoration: "underline",
-            wordBreak: "break-word",
-          }}
-        >
-          Open document
-        </a>
-      ) : (
-        <div
-          style={{
-            fontSize: "14px",
-            color: "var(--ackret-muted)",
-          }}
-        >
-          No link added yet
-        </div>
-      )}
+          const isCompleted = url === "completed";
+const hasUrl = Boolean(url.trim()) && !isCompleted;
+
+return (
+  <div
+    style={{
+      border: "1px solid rgba(22,58,112,0.12)",
+      borderRadius: "16px",
+      padding: "14px 16px",
+      background: "#fbfbf9",
+    }}
+  >
+    <div
+      style={{
+        fontSize: "14px",
+        fontWeight: 600,
+        color: "var(--ackret-navy)",
+        marginBottom: "6px",
+      }}
+    >
+      {label}
     </div>
-  );
+
+    {isCompleted ? (
+      <div
+        style={{
+          fontSize: "14px",
+          color: "green",
+          fontWeight: 600,
+        }}
+      >
+        ✓ Completed
+      </div>
+    ) : hasUrl ? (
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        style={{
+          fontSize: "14px",
+          color: "var(--ackret-gold-dark)",
+          textDecoration: "underline",
+        }}
+      >
+        Open document
+      </a>
+    ) : (
+      <div
+        style={{
+          fontSize: "14px",
+          color: "var(--ackret-muted)",
+        }}
+      >
+        Not added yet
+      </div>
+    )}
+  </div>
+);
 }
 
 const inputStyle: React.CSSProperties = {

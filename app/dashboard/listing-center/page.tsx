@@ -44,6 +44,8 @@ export default function ListingCenterPage() {
   const { profile, loading, saving, error, saveProfile } = useSellerProfile();
 
   const [form, setForm] = useState<ListingCenterForm>(initialForm);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [saveMessage, setSaveMessage] = useState("Loading...");
   const hasLoadedRef = useRef(false);
 
@@ -53,6 +55,14 @@ export default function ListingCenterPage() {
   ) {
     setForm((prev) => ({ ...prev, [key]: value }));
     setSaveMessage("Saving...");
+
+  function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  const files = e.target.files;
+  if (!files) return;
+
+  const fileArray = Array.from(files);
+  setSelectedImages(fileArray);
+}
   }
 
   useEffect(() => {
@@ -261,12 +271,24 @@ export default function ListingCenterPage() {
                     Main Listing Photo Area
                   </div>
 
-                  <button
-                    type="button"
-                    style={uploadButtonStyle}
-                  >
-                    Upload Pictures Here
-                  </button>
+                  <>
+  <button
+    type="button"
+    style={uploadButtonStyle}
+    onClick={() => fileInputRef.current?.click()}
+  >
+    Upload Pictures Here
+  </button>
+
+  <input
+    type="file"
+    multiple
+    accept="image/*"
+    ref={fileInputRef}
+    style={{ display: "none" }}
+    onChange={handleImageUpload}
+  />
+</>
 
                   <p
                     style={{
@@ -278,6 +300,27 @@ export default function ListingCenterPage() {
                     }}
                   >
                     Later we can connect this button to real photo uploads.
+{selectedImages.length > 0 && (
+  <div
+    style={{
+      marginTop: "16px",
+      display: "grid",
+      gap: "8px",
+    }}
+  >
+    {selectedImages.map((file, index) => (
+      <div
+        key={index}
+        style={{
+          fontSize: "13px",
+          color: "var(--ackret-muted)",
+        }}
+      >
+        {file.name}
+      </div>
+    ))}
+  </div>
+)}
                   </p>
                 </div>
               </div>

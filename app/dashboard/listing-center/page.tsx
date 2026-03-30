@@ -5,45 +5,39 @@ import Link from "next/link";
 import { useSellerProfile } from "@/hooks/useSellerProfile";
 
 type ListingCenterForm = {
+  listingPrice: string;
   propertyAddress: string;
   cityStateZip: string;
-  listPrice: string;
   bedrooms: string;
   bathrooms: string;
   squareFeet: string;
   lotSize: string;
   yearBuilt: string;
-  mlsHeadline: string;
+  listingHeadline: string;
   listingDescription: string;
-  leadPaintUrl: string;
   photosFolderUrl: string;
+  leadPaintUrl: string;
   photoGalleryUrl: string;
   floorPlanUrl: string;
   featureSheetUrl: string;
-  showingInstructions: string;
-  agentCompensationNotes: string;
-  privateNotes: string;
 };
 
 const initialForm: ListingCenterForm = {
+  listingPrice: "",
   propertyAddress: "",
   cityStateZip: "",
-  listPrice: "",
   bedrooms: "",
   bathrooms: "",
   squareFeet: "",
   lotSize: "",
   yearBuilt: "",
-  mlsHeadline: "",
+  listingHeadline: "",
   listingDescription: "",
-  leadPaintUrl: "",
   photosFolderUrl: "",
+  leadPaintUrl: "",
   photoGalleryUrl: "",
   floorPlanUrl: "",
   featureSheetUrl: "",
-  showingInstructions: "",
-  agentCompensationNotes: "",
-  privateNotes: "",
 };
 
 export default function ListingCenterPage() {
@@ -65,13 +59,42 @@ export default function ListingCenterPage() {
     if (!profile || hasLoadedRef.current) return;
 
     const saved = profile.progress?.listingCenter;
+    const conditionReportForm = profile.progress?.conditionReport?.form;
+    const conditionReportAnswers = profile.progress?.conditionReport?.answers;
+    const listHomeForm = profile.progress?.listHome?.form;
 
-    if (saved?.form) {
-      setForm({ ...initialForm, ...saved.form });
-    }
+    const hasConditionReport =
+      conditionReportAnswers &&
+      Object.values(conditionReportAnswers).some((a: any) => a.answer !== "");
+
+    setForm({
+      ...initialForm,
+      ...(saved?.form || {}),
+      propertyAddress:
+        saved?.form?.propertyAddress ||
+        conditionReportForm?.propertyAddress ||
+        "",
+      cityStateZip:
+        saved?.form?.cityStateZip || listHomeForm?.cityState || "",
+      listingPrice:
+        saved?.form?.listingPrice || listHomeForm?.price || "",
+      bedrooms:
+        saved?.form?.bedrooms || listHomeForm?.bedrooms || "",
+      bathrooms:
+        saved?.form?.bathrooms || listHomeForm?.bathrooms || "",
+      squareFeet:
+        saved?.form?.squareFeet || listHomeForm?.squareFootage || "",
+      lotSize:
+        saved?.form?.lotSize || listHomeForm?.lotSize || "",
+      leadPaintUrl:
+        saved?.form?.leadPaintUrl ||
+        (conditionReportForm?.builtBefore1978 === "yes" ? "needed" : ""),
+      listingDescription:
+        saved?.form?.listingDescription || "",
+    });
 
     hasLoadedRef.current = true;
-    setSaveMessage("Saved");
+    setSaveMessage(hasConditionReport ? "Saved" : "Saved");
   }, [profile]);
 
   useEffect(() => {
@@ -91,29 +114,11 @@ export default function ListingCenterPage() {
     return () => clearTimeout(timeout);
   }, [form, saveProfile]);
 
-  const conditionReportForm = profile?.progress?.conditionReport?.form;
   const conditionReportAnswers = profile?.progress?.conditionReport?.answers;
-  const listHomeForm = profile?.progress?.listHome?.form;
 
   const hasConditionReport =
     conditionReportAnswers &&
     Object.values(conditionReportAnswers).some((a: any) => a.answer !== "");
-
-  const derivedAddress =
-    form.propertyAddress || conditionReportForm?.propertyAddress || "";
-
-  const derivedCityStateZip =
-    form.cityStateZip || listHomeForm?.cityState || "";
-
-  const derivedPrice = form.listPrice || listHomeForm?.price || "";
-
-  const derivedBedrooms = form.bedrooms || listHomeForm?.bedrooms || "";
-
-  const derivedBathrooms = form.bathrooms || listHomeForm?.bathrooms || "";
-
-  const derivedSquareFeet = form.squareFeet || listHomeForm?.squareFootage || "";
-
-  const derivedLotSize = form.lotSize || listHomeForm?.lotSize || "";
 
   const documentLinks = useMemo(
     () => [
@@ -154,45 +159,18 @@ export default function ListingCenterPage() {
 
   const completedDocs = documentLinks.filter((d) => d.url).length;
 
-  const readinessItems = [
-    {
-      label: "Property address",
-      done: Boolean(derivedAddress),
-    },
-    {
-      label: "Price",
-      done: Boolean(derivedPrice),
-    },
-    {
-      label: "Beds / baths",
-      done: Boolean(derivedBedrooms && derivedBathrooms),
-    },
-    {
-      label: "Square footage",
-      done: Boolean(derivedSquareFeet),
-    },
-    {
-      label: "Listing description",
-      done: Boolean(form.listingDescription.trim()),
-    },
-    {
-      label: "Condition report",
-      done: Boolean(hasConditionReport),
-    },
-  ];
-
   if (loading) {
     return (
       <div style={{ maxWidth: "1180px", paddingTop: "24px" }}>
         <p style={{ color: "var(--ackret-muted)", fontSize: "16px" }}>
-          Loading your home sale hub...
+          Loading your listing center...
         </p>
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: "1220px" }}>
+    <div style={{ maxWidth: "1240px" }}>
       <p
         style={{
           margin: 0,
@@ -227,266 +205,234 @@ export default function ListingCenterPage() {
           color: "var(--ackret-muted)",
         }}
       >
-        This is the center of your home sale. Keep your documents, listing
-        details, photos, and notes all in one organized place.
+        Build this page like a live property listing. Add your price, photos,
+        description, and documents here.
       </p>
 
       <div
         style={{
           marginTop: "28px",
           display: "grid",
-          gridTemplateColumns: "1.45fr 1.1fr 0.9fr",
+          gridTemplateColumns: "1.6fr 0.75fr",
           gap: "24px",
           alignItems: "start",
         }}
       >
         <div style={{ display: "grid", gap: "24px" }}>
-          <Card>
-            <SectionHeading
-              eyebrow="MLS Snapshot"
-              title="Property details"
-            />
-
+          <section
+            style={{
+              background: "var(--ackret-surface)",
+              border: "1px solid var(--ackret-border)",
+              borderRadius: "28px",
+              padding: "24px",
+              boxShadow: "var(--ackret-shadow)",
+            }}
+          >
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                gap: "18px",
+                gridTemplateColumns: "2.2fr 1fr",
+                gap: "16px",
               }}
             >
-              <Field
-                label="Property Address"
-                value={form.propertyAddress}
-                onChange={(value) => updateField("propertyAddress", value)}
-                placeholder={conditionReportForm?.propertyAddress || "123 Main Street"}
-                fullWidth
-              />
+              <div
+                style={{
+                  minHeight: "380px",
+                  borderRadius: "24px",
+                  border: "1px solid rgba(22,58,112,0.10)",
+                  background:
+                    "linear-gradient(180deg, #f7f7f4 0%, #eceae4 100%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "24px",
+                  textAlign: "center",
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      fontSize: "18px",
+                      color: "var(--ackret-navy)",
+                      fontWeight: 600,
+                      marginBottom: "14px",
+                    }}
+                  >
+                    Main Listing Photo Area
+                  </div>
 
-              <Field
-                label="City, State, ZIP"
-                value={form.cityStateZip}
-                onChange={(value) => updateField("cityStateZip", value)}
-                placeholder={listHomeForm?.cityState || "Elkhorn, WI 53121"}
-              />
+                  <button
+                    type="button"
+                    style={uploadButtonStyle}
+                  >
+                    Upload Pictures Here
+                  </button>
 
-              <Field
-                label="List Price"
-                value={form.listPrice}
-                onChange={(value) => updateField("listPrice", value)}
-                placeholder={listHomeForm?.price || "$425,000"}
-              />
+                  <p
+                    style={{
+                      marginTop: "14px",
+                      marginBottom: 0,
+                      fontSize: "14px",
+                      lineHeight: 1.7,
+                      color: "var(--ackret-muted)",
+                    }}
+                  >
+                    Later we can connect this button to real photo uploads.
+                  </p>
+                </div>
+              </div>
 
-              <Field
-                label="Bedrooms"
-                value={form.bedrooms}
-                onChange={(value) => updateField("bedrooms", value)}
-                placeholder={listHomeForm?.bedrooms || "4"}
-              />
+              <div style={{ display: "grid", gap: "16px" }}>
+                <SmallPhotoCard title="Kitchen Photo" />
+                <SmallPhotoCard title="Living Room Photo" />
+                <SmallPhotoCard title="Exterior / Feature Photo" />
+              </div>
+            </div>
 
-              <Field
-                label="Bathrooms"
-                value={form.bathrooms}
-                onChange={(value) => updateField("bathrooms", value)}
-                placeholder={listHomeForm?.bathrooms || "2.5"}
-              />
-
-              <Field
-                label="Square Feet"
-                value={form.squareFeet}
-                onChange={(value) => updateField("squareFeet", value)}
-                placeholder={listHomeForm?.squareFootage || "2,350"}
-              />
-
-              <Field
-                label="Lot Size"
-                value={form.lotSize}
-                onChange={(value) => updateField("lotSize", value)}
-                placeholder={listHomeForm?.lotSize || "0.42 acres"}
-              />
-
-              <Field
-                label="Year Built"
-                value={form.yearBuilt}
-                onChange={(value) => updateField("yearBuilt", value)}
-                placeholder="1998"
+            <div style={{ marginTop: "24px" }}>
+              <label style={labelStyle}>Listing Price</label>
+              <input
+                type="text"
+                value={form.listingPrice}
+                onChange={(e) => updateField("listingPrice", e.target.value)}
+                placeholder="Listing Price"
+                style={priceInputStyle}
               />
             </div>
-          </Card>
 
-          <Card>
-            <SectionHeading
-              eyebrow="Public Remarks"
-              title="Headline and listing description"
-            />
-
-            <div style={{ display: "grid", gap: "18px" }}>
-              <Field
-                label="MLS Headline"
-                value={form.mlsHeadline}
-                onChange={(value) => updateField("mlsHeadline", value)}
-                placeholder="Beautiful updated home with strong curb appeal"
-              />
-
-              <TextAreaField
-                label="Listing Description"
-                value={form.listingDescription}
-                onChange={(value) => updateField("listingDescription", value)}
-                placeholder="Paste your final listing description here after generating it from the List the Home page."
-                rows={12}
-              />
-            </div>
-          </Card>
-
-          <Card>
-            <SectionHeading
-              eyebrow="Notes"
-              title="Showing and sale notes"
-            />
-
-            <div style={{ display: "grid", gap: "18px" }}>
-              <TextAreaField
-                label="Showing Instructions"
-                value={form.showingInstructions}
-                onChange={(value) => updateField("showingInstructions", value)}
-                placeholder="24-hour notice preferred. Text seller before showings."
-                rows={4}
-              />
-
-              <TextAreaField
-                label="Buyer Agent Compensation Notes"
-                value={form.agentCompensationNotes}
-                onChange={(value) =>
-                  updateField("agentCompensationNotes", value)
-                }
-                placeholder="Keep notes here for how you want to handle buyer-agent conversations."
-                rows={4}
-              />
-
-              <TextAreaField
-                label="Private Notes"
-                value={form.privateNotes}
-                onChange={(value) => updateField("privateNotes", value)}
-                placeholder="Anything you want to keep handy for your sale."
-                rows={5}
-              />
-            </div>
-          </Card>
-        </div>
-
-        <div style={{ display: "grid", gap: "24px" }}>
-          <Card>
-            <SectionHeading
-              eyebrow="Live Summary"
-              title="What you have so far"
-            />
-
-            <SummaryBlock
-              title={derivedAddress || "Property address not added yet"}
-              subtitle={derivedCityStateZip || "City / State / ZIP not added yet"}
-            />
-
-            <div
-              style={{
-                marginTop: "18px",
-                display: "grid",
-                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                gap: "12px",
-              }}
-            >
-              <MiniStat
-                label="Price"
-                value={derivedPrice || "Missing"}
-              />
-              <MiniStat
-                label="Beds / Baths"
-                value={
-                  derivedBedrooms || derivedBathrooms
-                    ? `${derivedBedrooms || "-"} / ${derivedBathrooms || "-"}`
-                    : "Missing"
-                }
-              />
-              <MiniStat
-                label="Sq Ft"
-                value={derivedSquareFeet || "Missing"}
-              />
-              <MiniStat
-                label="Lot Size"
-                value={derivedLotSize || "Missing"}
-              />
-            </div>
-          </Card>
-
-          <Card>
-            <SectionHeading
-              eyebrow="Readiness"
-              title="What is complete?"
-            />
-
-            <div style={{ display: "grid", gap: "10px" }}>
-              {readinessItems.map((item) => (
-                <ReadinessRow
-                  key={item.label}
-                  label={item.label}
-                  done={item.done}
+            <div style={{ marginTop: "18px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "18px",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                }}
+              >
+                <StatPill
+                  label="Bedrooms"
+                  value={form.bedrooms}
+                  placeholder="Bedrooms"
+                  onChange={(value) => updateField("bedrooms", value)}
                 />
-              ))}
+                <StatPill
+                  label="Bathrooms"
+                  value={form.bathrooms}
+                  placeholder="Bathrooms"
+                  onChange={(value) => updateField("bathrooms", value)}
+                />
+                <StatPill
+                  label="Sq Ft"
+                  value={form.squareFeet}
+                  placeholder="Square Feet"
+                  onChange={(value) => updateField("squareFeet", value)}
+                />
+                <StatPill
+                  label="Lot Size"
+                  value={form.lotSize}
+                  placeholder="Lot Size"
+                  onChange={(value) => updateField("lotSize", value)}
+                />
+              </div>
             </div>
-          </Card>
 
-          <Card>
-            <SectionHeading
-              eyebrow="Description Preview"
-              title="Listing copy"
-            />
-
-            <div
-              style={{
-                minHeight: "220px",
-                border: "1px solid rgba(22,58,112,0.10)",
-                borderRadius: "18px",
-                padding: "18px",
-                background: "#fbfbf9",
-              }}
-            >
-              {form.listingDescription.trim() ? (
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: "15px",
-                    lineHeight: 1.9,
-                    color: "var(--ackret-ink)",
-                    whiteSpace: "pre-wrap",
-                  }}
-                >
-                  {form.listingDescription}
-                </p>
-              ) : (
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: "15px",
-                    lineHeight: 1.8,
-                    color: "var(--ackret-muted)",
-                  }}
-                >
-                  No listing description has been added yet. Once you write your
-                  listing copy from the List the Home page, paste it here so this
-                  hub becomes the central source of truth for the property.
-                </p>
-              )}
+            <div style={{ marginTop: "22px" }}>
+              <label style={labelStyle}>Property Address</label>
+              <input
+                type="text"
+                value={form.propertyAddress}
+                onChange={(e) => updateField("propertyAddress", e.target.value)}
+                placeholder="Property Address"
+                style={headlineInputStyle}
+              />
             </div>
-          </Card>
+
+            <div style={{ marginTop: "14px" }}>
+              <label style={labelStyle}>City, State, ZIP</label>
+              <input
+                type="text"
+                value={form.cityStateZip}
+                onChange={(e) => updateField("cityStateZip", e.target.value)}
+                placeholder="City, State, ZIP"
+                style={standardInputStyle}
+              />
+            </div>
+
+            <div style={{ marginTop: "18px" }}>
+              <label style={labelStyle}>Listing Headline</label>
+              <input
+                type="text"
+                value={form.listingHeadline}
+                onChange={(e) => updateField("listingHeadline", e.target.value)}
+                placeholder="Example: Beautiful updated home with strong curb appeal"
+                style={headlineInputStyle}
+              />
+            </div>
+
+            <div style={{ marginTop: "18px" }}>
+              <label style={labelStyle}>Listing Description</label>
+              <textarea
+                value={form.listingDescription}
+                onChange={(e) =>
+                  updateField("listingDescription", e.target.value)
+                }
+                placeholder="Paste your listing description here"
+                rows={10}
+                style={descriptionStyle}
+              />
+            </div>
+          </section>
         </div>
 
         <div style={{ display: "grid", gap: "20px", position: "sticky", top: 24 }}>
           <Card>
-            <SectionHeading eyebrow="Documents" title="Side panel" />
+            <SectionHeading eyebrow="Documents" title="Listing Documents" />
 
             <div style={{ display: "grid", gap: "10px" }}>
               {documentLinks.map((doc) => (
                 <DocumentLinkCard key={doc.label} {...doc} />
               ))}
             </div>
+          </Card>
+
+          <Card>
+            <SectionHeading eyebrow="Media" title="Photo Links" />
+
+            <Field
+              label="Photos Folder Link"
+              value={form.photosFolderUrl}
+              onChange={(value) => updateField("photosFolderUrl", value)}
+              placeholder="Paste photo folder link"
+            />
+
+            <div style={{ height: "12px" }} />
+
+            <Field
+              label="Photo Gallery Link"
+              value={form.photoGalleryUrl}
+              onChange={(value) => updateField("photoGalleryUrl", value)}
+              placeholder="Paste photo gallery link"
+            />
+          </Card>
+
+          <Card>
+            <SectionHeading eyebrow="Extras" title="Optional Links" />
+
+            <Field
+              label="Floor Plan Link"
+              value={form.floorPlanUrl}
+              onChange={(value) => updateField("floorPlanUrl", value)}
+              placeholder="Paste floor plan link"
+            />
+
+            <div style={{ height: "12px" }} />
+
+            <Field
+              label="Feature Sheet Link"
+              value={form.featureSheetUrl}
+              onChange={(value) => updateField("featureSheetUrl", value)}
+              placeholder="Paste feature sheet link"
+            />
           </Card>
 
           <Card>
@@ -501,7 +447,7 @@ export default function ListingCenterPage() {
               value={saving ? "Saving..." : saveMessage}
             />
             <PreviewRow
-              label="Description"
+              label="Listing description"
               value={form.listingDescription.trim() ? "Added" : "Missing"}
             />
 
@@ -528,6 +474,82 @@ export default function ListingCenterPage() {
           </Link>
         </div>
       </div>
+    </div>
+  );
+}
+
+function SmallPhotoCard({ title }: { title: string }) {
+  return (
+    <div
+      style={{
+        minHeight: "116px",
+        borderRadius: "20px",
+        border: "1px solid rgba(22,58,112,0.10)",
+        background: "#f6f4ee",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        textAlign: "center",
+        padding: "12px",
+        color: "var(--ackret-muted)",
+        fontSize: "14px",
+        lineHeight: 1.6,
+      }}
+    >
+      {title}
+    </div>
+  );
+}
+
+function StatPill({
+  label,
+  value,
+  placeholder,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  placeholder: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div
+      style={{
+        minWidth: "150px",
+        border: "1px solid rgba(22,58,112,0.10)",
+        borderRadius: "18px",
+        padding: "14px 16px",
+        background: "#fbfbf9",
+      }}
+    >
+      <div
+        style={{
+          fontSize: "12px",
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          color: "var(--ackret-gold-dark)",
+          marginBottom: "8px",
+        }}
+      >
+        {label}
+      </div>
+
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        style={{
+          width: "100%",
+          border: "none",
+          outline: "none",
+          background: "transparent",
+          fontSize: "28px",
+          fontWeight: 600,
+          color: "var(--ackret-navy)",
+          padding: 0,
+        }}
+      />
     </div>
   );
 }
@@ -590,22 +612,14 @@ function Field({
   value,
   onChange,
   placeholder,
-  fullWidth = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-  fullWidth?: boolean;
 }) {
   return (
-    <label
-      style={{
-        display: "grid",
-        gap: "8px",
-        gridColumn: fullWidth ? "1 / -1" : undefined,
-      }}
-    >
+    <label style={{ display: "grid", gap: "8px" }}>
       <span
         style={{
           fontSize: "12px",
@@ -622,169 +636,9 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        style={inputStyle}
+        style={standardInputStyle}
       />
     </label>
-  );
-}
-
-function TextAreaField({
-  label,
-  value,
-  onChange,
-  placeholder,
-  rows,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  rows: number;
-}) {
-  return (
-    <label style={{ display: "grid", gap: "8px" }}>
-      <span
-        style={{
-          fontSize: "12px",
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
-          color: "var(--ackret-gold-dark)",
-        }}
-      >
-        {label}
-      </span>
-
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        rows={rows}
-        style={textareaStyle}
-      />
-    </label>
-  );
-}
-
-function SummaryBlock({
-  title,
-  subtitle,
-}: {
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <div
-      style={{
-        border: "1px solid rgba(22,58,112,0.10)",
-        borderRadius: "18px",
-        padding: "18px",
-        background: "#fbfbf9",
-      }}
-    >
-      <div
-        style={{
-          fontSize: "22px",
-          lineHeight: 1.3,
-          color: "var(--ackret-navy)",
-          fontWeight: 600,
-        }}
-      >
-        {title}
-      </div>
-
-      <div
-        style={{
-          marginTop: "8px",
-          fontSize: "15px",
-          lineHeight: 1.7,
-          color: "var(--ackret-muted)",
-        }}
-      >
-        {subtitle}
-      </div>
-    </div>
-  );
-}
-
-function MiniStat({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div
-      style={{
-        border: "1px solid rgba(22,58,112,0.10)",
-        borderRadius: "16px",
-        padding: "14px",
-        background: "#ffffff",
-      }}
-    >
-      <div
-        style={{
-          fontSize: "12px",
-          letterSpacing: "0.12em",
-          textTransform: "uppercase",
-          color: "var(--ackret-gold-dark)",
-          marginBottom: "8px",
-        }}
-      >
-        {label}
-      </div>
-
-      <div
-        style={{
-          fontSize: "18px",
-          color: "var(--ackret-navy)",
-          fontWeight: 600,
-        }}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
-
-function ReadinessRow({
-  label,
-  done,
-}: {
-  label: string;
-  done: boolean;
-}) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        gap: "16px",
-        padding: "12px 14px",
-        borderRadius: "16px",
-        border: "1px solid rgba(22,58,112,0.10)",
-        background: "#fbfbf9",
-      }}
-    >
-      <span
-        style={{
-          fontSize: "15px",
-          color: "var(--ackret-ink)",
-        }}
-      >
-        {label}
-      </span>
-
-      <span
-        style={{
-          fontSize: "14px",
-          fontWeight: 600,
-          color: done ? "green" : "var(--ackret-muted)",
-        }}
-      >
-        {done ? "Complete" : "Missing"}
-      </span>
-    </div>
   );
 }
 
@@ -838,7 +692,8 @@ function DocumentLinkCard({
   url: string;
 }) {
   const isCompleted = url === "completed";
-  const hasUrl = Boolean(url.trim()) && !isCompleted;
+  const isNeeded = url === "needed";
+  const hasUrl = Boolean(url.trim()) && !isCompleted && !isNeeded;
 
   return (
     <div
@@ -870,6 +725,16 @@ function DocumentLinkCard({
         >
           ✓ Completed
         </div>
+      ) : isNeeded ? (
+        <div
+          style={{
+            fontSize: "14px",
+            color: "var(--ackret-gold-dark)",
+            fontWeight: 600,
+          }}
+        >
+          Needed
+        </div>
       ) : hasUrl ? (
         <a
           href={url}
@@ -898,7 +763,16 @@ function DocumentLinkCard({
   );
 }
 
-const inputStyle: React.CSSProperties = {
+const labelStyle: React.CSSProperties = {
+  display: "block",
+  marginBottom: "8px",
+  fontSize: "12px",
+  letterSpacing: "0.14em",
+  textTransform: "uppercase",
+  color: "var(--ackret-gold-dark)",
+};
+
+const standardInputStyle: React.CSSProperties = {
   width: "100%",
   padding: "14px 16px",
   fontSize: "16px",
@@ -910,17 +784,58 @@ const inputStyle: React.CSSProperties = {
   boxSizing: "border-box",
 };
 
-const textareaStyle: React.CSSProperties = {
+const priceInputStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "10px 0",
+  fontSize: "54px",
+  lineHeight: 1,
+  fontWeight: 700,
+  border: "none",
+  outline: "none",
+  background: "transparent",
+  color: "var(--ackret-navy)",
+  boxSizing: "border-box",
+};
+
+const headlineInputStyle: React.CSSProperties = {
   width: "100%",
   padding: "14px 16px",
-  fontSize: "16px",
+  fontSize: "22px",
+  lineHeight: 1.3,
+  fontWeight: 600,
   borderRadius: "14px",
+  border: "1px solid rgba(22,58,112,0.15)",
+  outline: "none",
+  background: "#ffffff",
+  color: "var(--ackret-navy)",
+  boxSizing: "border-box",
+};
+
+const descriptionStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "18px",
+  fontSize: "16px",
+  lineHeight: 1.9,
+  borderRadius: "18px",
   border: "1px solid rgba(22,58,112,0.15)",
   outline: "none",
   background: "#ffffff",
   color: "var(--ackret-ink)",
   boxSizing: "border-box",
   resize: "vertical",
+};
+
+const uploadButtonStyle: React.CSSProperties = {
+  border: "none",
+  borderRadius: "999px",
+  padding: "14px 22px",
+  background: "var(--ackret-navy)",
+  color: "#ffffff",
+  fontSize: "13px",
+  letterSpacing: "0.14em",
+  textTransform: "uppercase",
+  cursor: "pointer",
+  boxShadow: "var(--ackret-shadow)",
 };
 
 const secondaryActionButtonStyle: React.CSSProperties = {

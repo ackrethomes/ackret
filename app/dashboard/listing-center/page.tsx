@@ -64,31 +64,7 @@ export default function ListingCenterPage() {
 
     const fileArray = Array.from(files);
     setSelectedImages((prev) => [...prev, ...fileArray]);
-
     e.target.value = "";
-  }
-
-  function moveImageLeft(index: number) {
-    if (index === 0) return;
-
-    setSelectedImages((prev) => {
-      const next = [...prev];
-      [next[index - 1], next[index]] = [next[index], next[index - 1]];
-      return next;
-    });
-  }
-
-  function moveImageRight(index: number) {
-    setSelectedImages((prev) => {
-      if (index >= prev.length - 1) return prev;
-      const next = [...prev];
-      [next[index], next[index + 1]] = [next[index + 1], next[index]];
-      return next;
-    });
-  }
-
-  function removeImage(index: number) {
-    setSelectedImages((prev) => prev.filter((_, i) => i !== index));
   }
 
   function makeMainPhoto(index: number) {
@@ -100,6 +76,10 @@ export default function ListingCenterPage() {
       next.unshift(selected);
       return next;
     });
+  }
+
+  function removeImage(index: number) {
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index));
   }
 
   useEffect(() => {
@@ -280,246 +260,149 @@ export default function ListingCenterPage() {
           >
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "2.2fr 1fr",
-                gap: "16px",
+                minHeight: "420px",
+                borderRadius: "24px",
+                border: "1px solid rgba(22,58,112,0.10)",
+                background:
+                  "linear-gradient(180deg, #f7f7f4 0%, #eceae4 100%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: previewUrls[0] ? "0" : "24px",
+                textAlign: "center",
+                overflow: "hidden",
+                position: "relative",
               }}
             >
-              <div
-                style={{
-                  minHeight: "380px",
-                  borderRadius: "24px",
-                  border: "1px solid rgba(22,58,112,0.10)",
-                  background:
-                    "linear-gradient(180deg, #f7f7f4 0%, #eceae4 100%)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: previewUrls[0] ? "0" : "24px",
-                  textAlign: "center",
-                  overflow: "hidden",
-                  position: "relative",
-                }}
-              >
-                {previewUrls[0] ? (
-                  <>
-                    <img
-                      src={previewUrls[0]}
-                      alt="Main listing preview"
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                    />
+              {previewUrls[0] ? (
+                <>
+                  <img
+                    src={previewUrls[0]}
+                    alt="Main listing preview"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                  />
 
-                    <div
-                      style={{
-                        position: "absolute",
-                        left: "16px",
-                        bottom: "16px",
-                        display: "flex",
-                        gap: "10px",
-                        flexWrap: "wrap",
-                      }}
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: "16px",
+                      bottom: "16px",
+                      display: "flex",
+                      gap: "10px",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      style={overlayButtonStyle}
+                      onClick={() => fileInputRef.current?.click()}
                     >
-                      <button
-                        type="button"
-                        style={overlayButtonStyle}
-                        onClick={() => fileInputRef.current?.click()}
-                      >
-                        Add More Photos
-                      </button>
-
-                      <button
-                        type="button"
-                        style={overlayButtonStyle}
-                        onClick={() => removeImage(0)}
-                      >
-                        Remove Main
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <div>
-                    <div
-                      style={{
-                        fontSize: "18px",
-                        color: "var(--ackret-navy)",
-                        fontWeight: 600,
-                        marginBottom: "14px",
-                      }}
-                    >
-                      Main Listing Photo Area
-                    </div>
+                      Add More Photos
+                    </button>
 
                     <button
                       type="button"
-                      style={uploadButtonStyle}
-                      onClick={() => fileInputRef.current?.click()}
+                      style={overlayButtonStyle}
+                      onClick={() => removeImage(0)}
                     >
-                      Upload Pictures Here
+                      Remove Main
                     </button>
-
-                    <p
-                      style={{
-                        marginTop: "14px",
-                        marginBottom: 0,
-                        fontSize: "14px",
-                        lineHeight: 1.7,
-                        color: "var(--ackret-muted)",
-                      }}
-                    >
-                      Upload multiple photos, then arrange them below.
-                    </p>
                   </div>
-                )}
+                </>
+              ) : (
+                <div>
+                  <div
+                    style={{
+                      fontSize: "18px",
+                      color: "var(--ackret-navy)",
+                      fontWeight: 600,
+                      marginBottom: "14px",
+                    }}
+                  >
+                    Main Listing Photo Area
+                  </div>
 
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  ref={fileInputRef}
-                  style={{ display: "none" }}
-                  onChange={handleImageUpload}
-                />
-              </div>
+                  <button
+                    type="button"
+                    style={uploadButtonStyle}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    Upload Pictures Here
+                  </button>
 
-              <div style={{ display: "grid", gap: "16px" }}>
-                <SmallPhotoCard
-                  title="Photo 2"
-                  previewUrl={previewUrls[1]}
-                  onClick={() => previewUrls[1] && makeMainPhoto(1)}
-                />
-                <SmallPhotoCard
-                  title="Photo 3"
-                  previewUrl={previewUrls[2]}
-                  onClick={() => previewUrls[2] && makeMainPhoto(2)}
-                />
-                <SmallPhotoCard
-                  title="Photo 4"
-                  previewUrl={previewUrls[3]}
-                  onClick={() => previewUrls[3] && makeMainPhoto(3)}
-                />
-              </div>
+                  <p
+                    style={{
+                      marginTop: "14px",
+                      marginBottom: 0,
+                      fontSize: "14px",
+                      lineHeight: 1.7,
+                      color: "var(--ackret-muted)",
+                    }}
+                  >
+                    Upload multiple photos, then click any thumbnail below to
+                    make it the main photo.
+                  </p>
+                </div>
+              )}
+
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                ref={fileInputRef}
+                style={{ display: "none" }}
+                onChange={handleImageUpload}
+              />
             </div>
 
-            <div style={{ marginTop: "18px" }}>
-              <SectionLabel>Photo Organizer</SectionLabel>
+            <div style={{ marginTop: "16px" }}>
+              <SectionLabel>Photo Strip</SectionLabel>
 
-              {selectedImages.length > 0 ? (
+              {previewUrls.length > 0 ? (
                 <div
                   style={{
-                    display: "grid",
+                    display: "flex",
                     gap: "12px",
+                    overflowX: "auto",
+                    paddingBottom: "6px",
                   }}
                 >
-                  {selectedImages.map((file, index) => (
-                    <div
-                      key={`${file.name}-${index}`}
+                  {previewUrls.map((url, index) => (
+                    <button
+                      key={`${url}-${index}`}
+                      type="button"
+                      onClick={() => makeMainPhoto(index)}
                       style={{
-                        display: "grid",
-                        gridTemplateColumns: "88px 1fr auto",
-                        gap: "14px",
-                        alignItems: "center",
-                        border: "1px solid rgba(22,58,112,0.10)",
-                        borderRadius: "18px",
-                        padding: "12px",
-                        background: index === 0 ? "#fffaf0" : "#fbfbf9",
+                        flex: "0 0 auto",
+                        width: "120px",
+                        height: "88px",
+                        padding: 0,
+                        borderRadius: "16px",
+                        overflow: "hidden",
+                        border:
+                          index === 0
+                            ? "3px solid var(--ackret-gold-dark)"
+                            : "1px solid rgba(22,58,112,0.12)",
+                        background: "#ffffff",
+                        cursor: "pointer",
+                        position: "relative",
                       }}
                     >
-                      <div
+                      <img
+                        src={url}
+                        alt={`Photo ${index + 1}`}
                         style={{
-                          width: "88px",
-                          height: "66px",
-                          borderRadius: "12px",
-                          overflow: "hidden",
-                          background: "#eceae4",
-                          border: "1px solid rgba(22,58,112,0.08)",
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          display: "block",
                         }}
-                      >
-                        {previewUrls[index] ? (
-                          <img
-                            src={previewUrls[index]}
-                            alt={file.name}
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                            }}
-                          />
-                        ) : null}
-                      </div>
-
-                      <div>
-                        <div
-                          style={{
-                            fontSize: "15px",
-                            color: "var(--ackret-navy)",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {file.name}
-                        </div>
-
-                        <div
-                          style={{
-                            marginTop: "4px",
-                            fontSize: "13px",
-                            color: "var(--ackret-muted)",
-                          }}
-                        >
-                          {index === 0
-                            ? "Main photo"
-                            : `Position ${index + 1}`}
-                        </div>
-                      </div>
-
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "8px",
-                          flexWrap: "wrap",
-                          justifyContent: "flex-end",
-                        }}
-                      >
-                        {index !== 0 ? (
-                          <button
-                            type="button"
-                            style={miniActionButtonStyle}
-                            onClick={() => makeMainPhoto(index)}
-                          >
-                            Make Main
-                          </button>
-                        ) : null}
-
-                        <button
-                          type="button"
-                          style={miniActionButtonStyle}
-                          onClick={() => moveImageLeft(index)}
-                          disabled={index === 0}
-                        >
-                          ←
-                        </button>
-
-                        <button
-                          type="button"
-                          style={miniActionButtonStyle}
-                          onClick={() => moveImageRight(index)}
-                          disabled={index === selectedImages.length - 1}
-                        >
-                          →
-                        </button>
-
-                        <button
-                          type="button"
-                          style={miniDangerButtonStyle}
-                          onClick={() => removeImage(index)}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
+                      />
+                    </button>
                   ))}
                 </div>
               ) : (
@@ -534,6 +417,18 @@ export default function ListingCenterPage() {
                 </div>
               )}
             </div>
+
+            {selectedImages.length > 0 ? (
+              <div
+                style={{
+                  marginTop: "14px",
+                  fontSize: "13px",
+                  color: "var(--ackret-muted)",
+                }}
+              >
+                Click a thumbnail to make it the main photo.
+              </div>
+            ) : null}
 
             <div style={{ marginTop: "24px" }}>
               <label style={labelStyle}>Listing Price</label>
@@ -724,53 +619,6 @@ export default function ListingCenterPage() {
         </div>
       </div>
     </div>
-  );
-}
-
-function SmallPhotoCard({
-  title,
-  previewUrl,
-  onClick,
-}: {
-  title: string;
-  previewUrl?: string;
-  onClick?: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        minHeight: "116px",
-        borderRadius: "20px",
-        border: "1px solid rgba(22,58,112,0.10)",
-        background: "#f6f4ee",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        textAlign: "center",
-        padding: previewUrl ? "0" : "12px",
-        color: "var(--ackret-muted)",
-        fontSize: "14px",
-        lineHeight: 1.6,
-        overflow: "hidden",
-        cursor: previewUrl ? "pointer" : "default",
-      }}
-    >
-      {previewUrl ? (
-        <img
-          src={previewUrl}
-          alt={title}
-          style={{
-            width: "100%",
-            height: "116px",
-            objectFit: "cover",
-          }}
-        />
-      ) : (
-        title
-      )}
-    </button>
   );
 }
 
@@ -1136,26 +984,6 @@ const overlayButtonStyle: React.CSSProperties = {
   fontSize: "12px",
   letterSpacing: "0.1em",
   textTransform: "uppercase",
-  cursor: "pointer",
-};
-
-const miniActionButtonStyle: React.CSSProperties = {
-  borderRadius: "999px",
-  border: "1px solid rgba(22,58,112,0.12)",
-  background: "#ffffff",
-  color: "var(--ackret-navy)",
-  fontSize: "12px",
-  padding: "8px 12px",
-  cursor: "pointer",
-};
-
-const miniDangerButtonStyle: React.CSSProperties = {
-  borderRadius: "999px",
-  border: "1px solid rgba(180,35,24,0.18)",
-  background: "#ffffff",
-  color: "#b42318",
-  fontSize: "12px",
-  padding: "8px 12px",
   cursor: "pointer",
 };
 

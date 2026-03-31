@@ -67,6 +67,7 @@ export default function ListingCenterPage() {
   const [uploadedPhotos, setUploadedPhotos] = useState<UploadedPhoto[]>([]);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [showOrganizer, setShowOrganizer] = useState(false);
+  const [isPublic, setIsPublic] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [saveMessage, setSaveMessage] = useState("Loading...");
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
@@ -168,7 +169,6 @@ export default function ListingCenterPage() {
       if (uploaded.length > 0) {
         setUploadedPhotos((prev) => {
           const next = [...prev, ...uploaded];
-
           const nextPaths = next.map((photo) => photo.path);
 
           setForm((current) => ({
@@ -189,6 +189,31 @@ export default function ListingCenterPage() {
     } finally {
       setIsUploadingPhotos(false);
       e.target.value = "";
+    }
+  }
+
+  async function togglePublicListing() {
+    const nextValue = !isPublic;
+
+    setIsPublic(nextValue);
+
+    const supabase = createSupabaseClient();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    const { error: updateError } = await supabase
+      .from("seller_profiles")
+      .update({ is_public: nextValue })
+      .eq("user_id", user.id);
+
+    if (updateError) {
+      console.error("Error updating public listing status:", updateError);
+      setIsPublic(!nextValue);
+      alert("Unable to update listing visibility right now.");
     }
   }
 
@@ -272,6 +297,7 @@ export default function ListingCenterPage() {
     };
 
     setForm(nextForm);
+    setIsPublic(Boolean((profile as any)?.is_public));
 
     const storedPaths = parseStoredPhotoPaths(nextForm.photoGalleryUrl);
 
@@ -426,6 +452,26 @@ export default function ListingCenterPage() {
         description, and documents here.
       </p>
 
+      <div style={{ marginTop: "20px" }}>
+        <button
+          type="button"
+          onClick={togglePublicListing}
+          style={{
+            border: "none",
+            borderRadius: "999px",
+            padding: "14px 22px",
+            background: isPublic ? "#15803d" : "var(--ackret-navy)",
+            color: "#ffffff",
+            fontSize: "13px",
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            cursor: "pointer",
+          }}
+        >
+          {isPublic ? "Listing is Public" : "Make Listing Public"}
+        </button>
+      </div>
+
       <div
         style={{
           marginTop: "28px",
@@ -496,7 +542,9 @@ export default function ListingCenterPage() {
                       style={overlayButtonStyle}
                       onClick={() => setShowOrganizer((prev) => !prev)}
                     >
-                      {showOrganizer ? "Hide Organizer" : "See / Rearrange All Photos"}
+                      {showOrganizer
+                        ? "Hide Organizer"
+                        : "See / Rearrange All Photos"}
                     </button>
 
                     <button
@@ -575,7 +623,9 @@ export default function ListingCenterPage() {
                     style={textButtonStyle}
                     onClick={() => setShowOrganizer((prev) => !prev)}
                   >
-                    {showOrganizer ? "Hide Organizer" : "See / Rearrange All Photos"}
+                    {showOrganizer
+                      ? "Hide Organizer"
+                      : "See / Rearrange All Photos"}
                   </button>
                 ) : null}
               </div>
@@ -872,6 +922,27 @@ export default function ListingCenterPage() {
               {documentLinks.map((doc) => (
                 <DocumentLinkCard key={doc.label} {...doc} />
               ))}
+            </div>
+          </Card>
+
+          <Card>
+            <SectionHeading eyebrow="Visibility" title="Public Listing" />
+
+            <PreviewRow
+              label="Status"
+              value={isPublic ? "Public" : "Private"}
+            />
+
+            <div
+              style={{
+                marginTop: "14px",
+                fontSize: "14px",
+                lineHeight: 1.8,
+                color: "var(--ackret-muted)",
+              }}
+            >
+              When public, this listing will be eligible to appear on the Homes
+              for Sale page.
             </div>
           </Card>
 

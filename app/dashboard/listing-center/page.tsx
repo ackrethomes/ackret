@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSellerProfile } from "@/hooks/useSellerProfile";
+import { createClient as createSupabaseClient } from "@/hooks/supabase/client";
 
 type ListingCenterForm = {
   listingPrice: string;
@@ -20,6 +21,12 @@ type ListingCenterForm = {
   photoGalleryUrl: string;
   floorPlanUrl: string;
   featureSheetUrl: string;
+};
+
+type UploadedPhoto = {
+  path: string;
+  previewUrl: string;
+  name: string;
 };
 
 const initialForm: ListingCenterForm = {
@@ -40,14 +47,27 @@ const initialForm: ListingCenterForm = {
   featureSheetUrl: "",
 };
 
+function parseStoredPhotoPaths(value: string | undefined) {
+  if (!value) return [] as string[];
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function ListingCenterPage() {
   const { profile, loading, saving, error, saveProfile } = useSellerProfile();
 
   const [form, setForm] = useState<ListingCenterForm>(initialForm);
-  const [selectedImages, setSelectedImages] = useState<File[]>([]);
-  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [uploadedPhotos, setUploadedPhotos] = useState<UploadedPhoto[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [saveMessage, setSaveMessage] = useState("Loading...");
+  const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const hasLoadedRef = useRef(false);
 
   function updateField<K extends keyof ListingCenterForm>(
@@ -58,38 +78,131 @@ export default function ListingCenterPage() {
     setSaveMessage("Saving...");
   }
 
-  function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  async function buildSignedPhotos(paths: string[]) {
+    const supabase = createSupabaseClient();
+
+    const signedResults = await Promise.all(
+      paths.map(async (path) => {
+        const { data, error } = await supabase.storage
+          .from("listing-photos")
+          .createSignedUrl(path, 60 * 60 * 24 * 7);
+
+        if (error || !data?.signedUrl) {
+          console.error("Signed URL error:", path, error);
+          return null;
+        }
+
+        return {
+          path,
+          previewUrl: data.signedUrl,
+          name: path.split("/").pop() || "Photo",
+        } satisfies UploadedPhoto;
+      })
+    );
+
+    return signedResults.filter(
+      (item): item is UploadedPhoto => item !== null
+    );
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files) return;
 
     const fileArray = Array.from(files);
-    setSelectedImages((prev) => [...prev, ...fileArray]);
-    e.target.value = "";
+    if (fileArray.length === 0) return;
+
+    const supabase = createSupabaseClient();
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      console.error("Unable to get current user for upload.", userError);
+      alert("You must be logged in to upload photos.");
+      e.target.value = "";
+      return;
+    }
+
+    setIsUploadingPhotos(true);
+
+    try {
+      const uploaded: UploadedPhoto[] = [];
+      const folderPath = `${user.id}/listing-center`;
+
+      for (const file of fileArray) {
+        const safeName = file.name.replace(/\s+/g, "-");
+        const filePath = `${folderPath}/${Date.now()}-${Math.random()
+          .toString(36)
+          .slice(2)}-${safeName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("listing-photos")
+          .upload(filePath, file);
+
+        if (uploadError) {
+          console.error("Upload error:", uploadError);
+          continue;
+        }
+
+        const { data: signedData, error: signedError } = await supabase.storage
+          .from("listing-photos")
+          .createSignedUrl(filePath, 60 * 60 * 24 * 7);
+
+        if (signedError || !signedData?.signedUrl) {
+          console.error("Signed URL creation error:", signedError);
+          continue;
+        }
+
+        uploaded.push({
+          path: filePath,
+          previewUrl: signedData.signedUrl,
+          name: file.name,
+        });
+      }
+
+      if (uploaded.length > 0) {
+        setUploadedPhotos((prev) => {
+          const next = [...prev, ...uploaded];
+
+          const nextPaths = next.map((photo) => photo.path);
+
+          setForm((current) => ({
+            ...current,
+            photosFolderUrl: folderPath,
+            photoGalleryUrl: JSON.stringify(nextPaths),
+          }));
+
+          return next;
+        });
+
+        setSaveMessage("Saving...");
+      }
+    } finally {
+      setIsUploadingPhotos(false);
+      e.target.value = "";
+    }
   }
 
   function makeMainPhoto(index: number) {
     if (index === 0) return;
 
-    setSelectedImages((prev) => {
+    setUploadedPhotos((prev) => {
       const next = [...prev];
       const [selected] = next.splice(index, 1);
       next.unshift(selected);
       return next;
     });
+
+    setSaveMessage("Saving...");
   }
 
   function removeImage(index: number) {
-    setSelectedImages((prev) => prev.filter((_, i) => i !== index));
+    setUploadedPhotos((prev) => prev.filter((_, i) => i !== index));
+    setSaveMessage("Saving...");
   }
-
-  useEffect(() => {
-    const urls = selectedImages.map((file) => URL.createObjectURL(file));
-    setPreviewUrls(urls);
-
-    return () => {
-      urls.forEach((url) => URL.revokeObjectURL(url));
-    };
-  }, [selectedImages]);
 
   useEffect(() => {
     if (!profile || hasLoadedRef.current) return;
@@ -103,7 +216,7 @@ export default function ListingCenterPage() {
       conditionReportAnswers &&
       Object.values(conditionReportAnswers).some((a: any) => a.answer !== "");
 
-    setForm({
+    const nextForm: ListingCenterForm = {
       ...initialForm,
       ...(saved?.form || {}),
       propertyAddress:
@@ -121,11 +234,41 @@ export default function ListingCenterPage() {
         saved?.form?.leadPaintUrl ||
         (conditionReportForm?.builtBefore1978 === "yes" ? "needed" : ""),
       listingDescription: saved?.form?.listingDescription || "",
-    });
+    };
+
+    setForm(nextForm);
+
+    const storedPaths = parseStoredPhotoPaths(nextForm.photoGalleryUrl);
+
+    if (storedPaths.length > 0) {
+      buildSignedPhotos(storedPaths)
+        .then((photos) => {
+          setUploadedPhotos(photos);
+        })
+        .catch((err) => {
+          console.error("Unable to load stored listing photos.", err);
+        });
+    }
 
     hasLoadedRef.current = true;
     setSaveMessage(hasConditionReport ? "Saved" : "Saved");
   }, [profile]);
+
+  useEffect(() => {
+    if (!hasLoadedRef.current) return;
+
+    const nextPaths = uploadedPhotos.map((photo) => photo.path);
+    const nextGalleryValue = JSON.stringify(nextPaths);
+
+    setForm((prev) => {
+      if (prev.photoGalleryUrl === nextGalleryValue) return prev;
+
+      return {
+        ...prev,
+        photoGalleryUrl: nextGalleryValue,
+      };
+    });
+  }, [uploadedPhotos]);
 
   useEffect(() => {
     if (!hasLoadedRef.current) return;
@@ -166,7 +309,7 @@ export default function ListingCenterPage() {
       },
       {
         label: "Photo Gallery",
-        url: form.photoGalleryUrl,
+        url: uploadedPhotos.length > 0 ? "completed" : form.photoGalleryUrl,
       },
       {
         label: "Floor Plan",
@@ -184,6 +327,7 @@ export default function ListingCenterPage() {
       form.photoGalleryUrl,
       form.floorPlanUrl,
       form.featureSheetUrl,
+      uploadedPhotos.length,
     ]
   );
 
@@ -268,16 +412,16 @@ export default function ListingCenterPage() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                padding: previewUrls[0] ? "0" : "24px",
+                padding: uploadedPhotos[0] ? "0" : "24px",
                 textAlign: "center",
                 overflow: "hidden",
                 position: "relative",
               }}
             >
-              {previewUrls[0] ? (
+              {uploadedPhotos[0] ? (
                 <>
                   <img
-                    src={previewUrls[0]}
+                    src={uploadedPhotos[0].previewUrl}
                     alt="Main listing preview"
                     style={{
                       width: "100%",
@@ -301,7 +445,7 @@ export default function ListingCenterPage() {
                       style={overlayButtonStyle}
                       onClick={() => fileInputRef.current?.click()}
                     >
-                      Add More Photos
+                      {isUploadingPhotos ? "Uploading..." : "Add More Photos"}
                     </button>
 
                     <button
@@ -330,8 +474,11 @@ export default function ListingCenterPage() {
                     type="button"
                     style={uploadButtonStyle}
                     onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploadingPhotos}
                   >
-                    Upload Pictures Here
+                    {isUploadingPhotos
+                      ? "Uploading..."
+                      : "Upload Pictures Here"}
                   </button>
 
                   <p
@@ -362,7 +509,7 @@ export default function ListingCenterPage() {
             <div style={{ marginTop: "16px" }}>
               <SectionLabel>Photo Strip</SectionLabel>
 
-              {previewUrls.length > 0 ? (
+              {uploadedPhotos.length > 0 ? (
                 <div
                   style={{
                     display: "flex",
@@ -371,9 +518,9 @@ export default function ListingCenterPage() {
                     paddingBottom: "6px",
                   }}
                 >
-                  {previewUrls.map((url, index) => (
+                  {uploadedPhotos.map((photo, index) => (
                     <button
-                      key={`${url}-${index}`}
+                      key={`${photo.path}-${index}`}
                       type="button"
                       onClick={() => makeMainPhoto(index)}
                       style={{
@@ -393,7 +540,7 @@ export default function ListingCenterPage() {
                       }}
                     >
                       <img
-                        src={url}
+                        src={photo.previewUrl}
                         alt={`Photo ${index + 1}`}
                         style={{
                           width: "100%",
@@ -418,7 +565,7 @@ export default function ListingCenterPage() {
               )}
             </div>
 
-            {selectedImages.length > 0 ? (
+            {uploadedPhotos.length > 0 ? (
               <div
                 style={{
                   marginTop: "14px",
@@ -426,7 +573,8 @@ export default function ListingCenterPage() {
                   color: "var(--ackret-muted)",
                 }}
               >
-                Click a thumbnail to make it the main photo.
+                Click a thumbnail to make it the main photo. The current order
+                will save with this page.
               </div>
             ) : null}
 
@@ -542,19 +690,19 @@ export default function ListingCenterPage() {
             <SectionHeading eyebrow="Media" title="Photo Links" />
 
             <Field
-              label="Photos Folder Link"
+              label="Photos Folder"
               value={form.photosFolderUrl}
               onChange={(value) => updateField("photosFolderUrl", value)}
-              placeholder="Paste photo folder link"
+              placeholder="This will fill automatically after uploads"
             />
 
             <div style={{ height: "12px" }} />
 
             <Field
-              label="Photo Gallery Link"
+              label="Stored Photo Order"
               value={form.photoGalleryUrl}
               onChange={(value) => updateField("photoGalleryUrl", value)}
-              placeholder="Paste photo gallery link"
+              placeholder="This will fill automatically after uploads"
             />
           </Card>
 
@@ -591,8 +739,8 @@ export default function ListingCenterPage() {
               value={form.listingDescription.trim() ? "Added" : "Missing"}
             />
             <PreviewRow
-              label="Selected photos"
-              value={selectedImages.length ? `${selectedImages.length}` : "0"}
+              label="Uploaded photos"
+              value={uploadedPhotos.length ? `${uploadedPhotos.length}` : "0"}
             />
 
             {error ? (

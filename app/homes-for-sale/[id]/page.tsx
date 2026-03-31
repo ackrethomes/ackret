@@ -1,12 +1,16 @@
+import Link from "next/link";
 import PublicHeader from "@/components/site/PublicHeader";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ListingDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ photo?: string }>;
 }) {
   const { id } = await params;
+  const { photo } = await searchParams;
   const supabase = await createClient();
 
   const { data: profile, error } = await supabase
@@ -66,7 +70,7 @@ export default async function ListingDetailPage({
 
   const form = profile.progress?.listingCenter?.form ?? {};
 
-  const photos: string[] = (() => {
+  const photoPaths: string[] = (() => {
     try {
       return JSON.parse(form.photoGalleryUrl || "[]");
     } catch {
@@ -74,26 +78,34 @@ export default async function ListingDetailPage({
     }
   })();
 
-  const photoUrls = await Promise.all(
-    photos.map(async (path) => {
+  const signedPhotos = await Promise.all(
+    photoPaths.map(async (path) => {
       const { data, error: signedError } = await supabase.storage
         .from("listing-photos")
         .createSignedUrl(path, 60 * 60);
 
-      if (signedError) {
+      if (signedError || !data?.signedUrl) {
         console.error("Signed URL error:", signedError);
         return null;
       }
 
-      return data?.signedUrl ?? null;
+      return data.signedUrl;
     })
   );
 
-  const validPhotoUrls = photoUrls.filter(
+  const validPhotoUrls = signedPhotos.filter(
     (url): url is string => typeof url === "string" && url.length > 0
   );
 
-  const mainPhoto = validPhotoUrls[0] ?? null;
+  const requestedIndex = Number(photo ?? "0");
+  const activePhotoIndex =
+    Number.isInteger(requestedIndex) &&
+    requestedIndex >= 0 &&
+    requestedIndex < validPhotoUrls.length
+      ? requestedIndex
+      : 0;
+
+  const mainPhoto = validPhotoUrls[activePhotoIndex] ?? null;
 
   return (
     <div style={{ background: "var(--ackret-bg)", minHeight: "100vh" }}>
@@ -112,8 +124,9 @@ export default async function ListingDetailPage({
               height: "420px",
               borderRadius: "24px",
               overflow: "hidden",
-              marginBottom: "20px",
+              marginBottom: "18px",
               boxShadow: "var(--ackret-shadow)",
+              background: "#f3efe6",
             }}
           >
             <img
@@ -133,7 +146,7 @@ export default async function ListingDetailPage({
               height: "420px",
               borderRadius: "24px",
               overflow: "hidden",
-              marginBottom: "20px",
+              marginBottom: "18px",
               background: "linear-gradient(180deg, #f4f2ec 0%, #e6e1d7 100%)",
               display: "flex",
               alignItems: "center",
@@ -150,25 +163,44 @@ export default async function ListingDetailPage({
           <div
             style={{
               display: "flex",
-              gap: "10px",
+              gap: "12px",
               marginBottom: "30px",
               overflowX: "auto",
               paddingBottom: "4px",
             }}
           >
-            {validPhotoUrls.map((url, i) => (
-              <img
-                key={i}
-                src={url}
-                alt={`Listing photo ${i + 1}`}
+            {validPhotoUrls.map((url, index) => (
+              <Link
+                key={index}
+                href={`/homes-for-sale/${id}?photo=${index}`}
                 style={{
-                  width: "120px",
-                  height: "80px",
-                  objectFit: "cover",
-                  borderRadius: "12px",
                   display: "block",
+                  flex: "0 0 auto",
+                  width: "132px",
+                  height: "88px",
+                  borderRadius: "14px",
+                  overflow: "hidden",
+                  border:
+                    index === activePhotoIndex
+                      ? "3px solid var(--ackret-gold-dark)"
+                      : "1px solid rgba(22,58,112,0.12)",
+                  boxShadow:
+                    index === activePhotoIndex
+                      ? "0 0 0 1px rgba(22,58,112,0.04)"
+                      : "none",
                 }}
-              />
+              >
+                <img
+                  src={url}
+                  alt={`Listing photo ${index + 1}`}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
+                  }}
+                />
+              </Link>
             ))}
           </div>
         ) : null}

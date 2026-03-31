@@ -1,3 +1,4 @@
+import Link from "next/link";
 import PublicHeader from "@/components/site/PublicHeader";
 import { createClient } from "@/lib/supabase/server";
 
@@ -143,94 +144,116 @@ export default async function HomesForSalePage() {
             }}
           >
             {homes.map((home) => (
-              <article
+              <Link
                 key={home.id}
+                href={`/homes-for-sale/${home.id}`}
                 style={{
-                  background: "var(--ackret-surface)",
-                  border: "1px solid var(--ackret-border)",
-                  borderRadius: "24px",
-                  overflow: "hidden",
-                  boxShadow: "var(--ackret-shadow)",
+                  textDecoration: "none",
+                  color: "inherit",
+                  display: "block",
                 }}
               >
-                <div
+                <article
                   style={{
-                    height: "220px",
-                    background:
-                      "linear-gradient(180deg, #f4f2ec 0%, #e6e1d7 100%)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "var(--ackret-muted)",
-                    fontSize: "15px",
+                    background: "var(--ackret-surface)",
+                    border: "1px solid var(--ackret-border)",
+                    borderRadius: "24px",
+                    overflow: "hidden",
+                    boxShadow: "var(--ackret-shadow)",
+                    height: "100%",
+                    transition: "transform 0.15s ease, box-shadow 0.15s ease",
+                    cursor: "pointer",
                   }}
                 >
-                  Listing Photo
-                </div>
-
-                <div style={{ padding: "22px" }}>
                   <div
                     style={{
-                      fontSize: "32px",
-                      fontWeight: 700,
-                      color: "var(--ackret-navy)",
-                      marginBottom: "10px",
-                      lineHeight: 1,
-                    }}
-                  >
-                    {home.price}
-                  </div>
-
-                  <div
-                    style={{
-                      fontSize: "20px",
-                      fontWeight: 600,
-                      color: "var(--ackret-navy)",
-                      marginBottom: "8px",
-                      lineHeight: 1.25,
-                    }}
-                  >
-                    {home.address}
-                  </div>
-
-                  <div
-                    style={{
-                      fontSize: "15px",
-                      color: "var(--ackret-muted)",
-                      marginBottom: "14px",
-                    }}
-                  >
-                    {home.cityStateZip}
-                  </div>
-
-                  <div
-                    style={{
+                      height: "220px",
+                      background:
+                        "linear-gradient(180deg, #f4f2ec 0%, #e6e1d7 100%)",
                       display: "flex",
-                      gap: "14px",
-                      flexWrap: "wrap",
-                      marginBottom: "14px",
-                      color: "var(--ackret-navy)",
-                      fontWeight: 600,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "var(--ackret-muted)",
+                      fontSize: "15px",
                     }}
                   >
-                    <span>{home.beds} bd</span>
-                    <span>{home.baths} ba</span>
-                    <span>{home.sqft} sqft</span>
+                    Listing Photo
                   </div>
 
-                  <p
-                    style={{
-                      marginTop: 0,
-                      marginBottom: 0,
-                      fontSize: "15px",
-                      lineHeight: 1.8,
-                      color: "var(--ackret-muted)",
-                    }}
-                  >
-                    {home.description}
-                  </p>
-                </div>
-              </article>
+                  <div style={{ padding: "22px" }}>
+                    <div
+                      style={{
+                        fontSize: "32px",
+                        fontWeight: 700,
+                        color: "var(--ackret-navy)",
+                        marginBottom: "10px",
+                        lineHeight: 1,
+                      }}
+                    >
+                      {home.price}
+                    </div>
+
+                    <div
+                      style={{
+                        fontSize: "20px",
+                        fontWeight: 600,
+                        color: "var(--ackret-navy)",
+                        marginBottom: "8px",
+                        lineHeight: 1.25,
+                      }}
+                    >
+                      {home.address}
+                    </div>
+
+                    <div
+                      style={{
+                        fontSize: "15px",
+                        color: "var(--ackret-muted)",
+                        marginBottom: "14px",
+                      }}
+                    >
+                      {home.cityStateZip}
+                    </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "14px",
+                        flexWrap: "wrap",
+                        marginBottom: "14px",
+                        color: "var(--ackret-navy)",
+                        fontWeight: 600,
+                      }}
+                    >
+                      <span>{home.beds} bd</span>
+                      <span>{home.baths} ba</span>
+                      <span>{home.sqft} sqft</span>
+                    </div>
+
+                    <p
+                      style={{
+                        marginTop: 0,
+                        marginBottom: "14px",
+                        fontSize: "15px",
+                        lineHeight: 1.8,
+                        color: "var(--ackret-muted)",
+                      }}
+                    >
+                      {home.description}
+                    </p>
+
+                    <div
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: 600,
+                        color: "var(--ackret-gold-dark)",
+                      }}
+                    >
+                      View listing →
+                    </div>
+                  </div>
+                </article>
+              </Link>
             ))}
           </div>
         )}

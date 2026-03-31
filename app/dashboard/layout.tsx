@@ -9,24 +9,20 @@ export default async function DashboardLayout({
 }) {
   const supabase = await createClient();
 
-  // Get logged in user
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Not logged in → send to login
   if (!user) {
     redirect("/login");
   }
 
-  // Get seller profile
   const { data: profile } = await supabase
     .from("seller_profiles")
     .select("is_paid")
     .eq("user_id", user.id)
     .single();
 
-  // Not paid → send to pricing
   if (!profile?.is_paid) {
     redirect("/pricing");
   }
@@ -51,11 +47,47 @@ export default async function DashboardLayout({
         <section
           style={{
             flex: 1,
-            padding: "40px 32px 60px",
-            boxSizing: "border-box",
+            display: "flex",
+            flexDirection: "column",
           }}
         >
-          {children}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              alignItems: "center",
+              padding: "20px 32px",
+              borderBottom: "1px solid var(--ackret-border)",
+              background: "var(--ackret-surface)",
+            }}
+          >
+            <a
+              href="/"
+              style={{
+                textDecoration: "none",
+                color: "var(--ackret-navy)",
+                border: "1px solid rgba(22,58,112,0.2)",
+                padding: "10px 16px",
+                borderRadius: "999px",
+                fontSize: "12px",
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                fontWeight: 600,
+              }}
+            >
+              View Public Site
+            </a>
+          </div>
+
+          <div
+            style={{
+              flex: 1,
+              padding: "40px 32px 60px",
+              boxSizing: "border-box",
+            }}
+          >
+            {children}
+          </div>
         </section>
       </div>
     </main>

@@ -1,6 +1,11 @@
 import Link from "next/link";
 import PublicHeader from "@/components/site/PublicHeader";
-import { createClient } from "@/lib/supabase/server";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
+
+const supabase = createAdminClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 type PublicListing = {
   id: string;
@@ -11,11 +16,10 @@ type PublicListing = {
   baths: string;
   sqft: string;
   description: string;
+  thumbnailUrl: string | null;
 };
 
 export default async function HomesForSalePage() {
-  const supabase = await createClient();
-
   const { data: profiles, error } = await supabase
     .from("seller_profiles")
     .select("user_id, is_public, progress")
@@ -26,9 +30,29 @@ export default async function HomesForSalePage() {
     console.error("Error loading public listings:", error);
   }
 
-  const homes: PublicListing[] =
-    profiles?.map((profile: any) => {
+  const homes: PublicListing[] = await Promise.all(
+    (profiles ?? []).map(async (profile: any) => {
       const listingForm = profile?.progress?.listingCenter?.form ?? {};
+
+      let thumbnailUrl: string | null = null;
+
+      try {
+        const photoPaths: string[] = JSON.parse(
+          listingForm.photoGalleryUrl || "[]"
+        );
+
+        if (Array.isArray(photoPaths) && photoPaths.length > 0) {
+          const { data, error: signedError } = await supabase.storage
+            .from("listing-photos")
+            .createSignedUrl(photoPaths[0], 60 * 60);
+
+          if (!signedError && data?.signedUrl) {
+            thumbnailUrl = data.signedUrl;
+          }
+        }
+      } catch (err) {
+        console.error("Unable to load thumbnail for listing:", err);
+      }
 
       return {
         id: profile.user_id,
@@ -41,8 +65,10 @@ export default async function HomesForSalePage() {
         description:
           listingForm.listingDescription ||
           "Listing description coming soon.",
+        thumbnailUrl,
       };
-    }) ?? [];
+    })
+  );
 
   return (
     <div
@@ -161,7 +187,6 @@ export default async function HomesForSalePage() {
                     overflow: "hidden",
                     boxShadow: "var(--ackret-shadow)",
                     height: "100%",
-                    transition: "transform 0.15s ease, box-shadow 0.15s ease",
                     cursor: "pointer",
                   }}
                 >
@@ -175,9 +200,23 @@ export default async function HomesForSalePage() {
                       justifyContent: "center",
                       color: "var(--ackret-muted)",
                       fontSize: "15px",
+                      overflow: "hidden",
                     }}
                   >
-                    Listing Photo
+                    {home.thumbnailUrl ? (
+                      <img
+                        src={home.thumbnailUrl}
+                        alt={home.address}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          display: "block",
+                        }}
+                      />
+                    ) : (
+                      "Listing Photo"
+                    )}
                   </div>
 
                   <div style={{ padding: "22px" }}>

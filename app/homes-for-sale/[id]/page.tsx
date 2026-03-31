@@ -1,5 +1,5 @@
-import Link from "next/link";
 import PublicHeader from "@/components/site/PublicHeader";
+import PublicListingGallery from "@/components/site/PublicListingGallery";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 
 const supabase = createAdminClient(
@@ -9,13 +9,10 @@ const supabase = createAdminClient(
 
 export default async function ListingDetailPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ photo?: string }>;
 }) {
   const { id } = await params;
-  const { photo } = await searchParams;
 
   const { data: profile, error } = await supabase
     .from("seller_profiles")
@@ -101,16 +98,6 @@ export default async function ListingDetailPage({
     (url): url is string => typeof url === "string" && url.length > 0
   );
 
-  const requestedIndex = Number(photo ?? "0");
-  const activePhotoIndex =
-    Number.isInteger(requestedIndex) &&
-    requestedIndex >= 0 &&
-    requestedIndex < validPhotoUrls.length
-      ? requestedIndex
-      : 0;
-
-  const mainPhoto = validPhotoUrls[activePhotoIndex] ?? null;
-
   return (
     <div style={{ background: "var(--ackret-bg)", minHeight: "100vh" }}>
       <PublicHeader />
@@ -122,88 +109,10 @@ export default async function ListingDetailPage({
           padding: "40px 24px 80px",
         }}
       >
-        {mainPhoto ? (
-          <div
-            style={{
-              height: "420px",
-              borderRadius: "24px",
-              overflow: "hidden",
-              marginBottom: "18px",
-              boxShadow: "var(--ackret-shadow)",
-              background: "#f3efe6",
-            }}
-          >
-            <img
-              src={mainPhoto}
-              alt={form.propertyAddress || "Listing photo"}
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                display: "block",
-              }}
-            />
-          </div>
-        ) : (
-          <div
-            style={{
-              height: "420px",
-              borderRadius: "24px",
-              overflow: "hidden",
-              marginBottom: "18px",
-              background: "linear-gradient(180deg, #f4f2ec 0%, #e6e1d7 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "var(--ackret-muted)",
-              fontSize: "16px",
-            }}
-          >
-            Listing Photo
-          </div>
-        )}
-
-        {validPhotoUrls.length > 1 ? (
-          <div
-            style={{
-              display: "flex",
-              gap: "12px",
-              marginBottom: "30px",
-              overflowX: "auto",
-              paddingBottom: "4px",
-            }}
-          >
-            {validPhotoUrls.map((url, index) => (
-              <Link
-                key={index}
-                href={`/homes-for-sale/${id}?photo=${index}`}
-                style={{
-                  display: "block",
-                  flex: "0 0 auto",
-                  width: "132px",
-                  height: "88px",
-                  borderRadius: "14px",
-                  overflow: "hidden",
-                  border:
-                    index === activePhotoIndex
-                      ? "3px solid var(--ackret-gold-dark)"
-                      : "1px solid rgba(22,58,112,0.12)",
-                }}
-              >
-                <img
-                  src={url}
-                  alt={`Listing photo ${index + 1}`}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    display: "block",
-                  }}
-                />
-              </Link>
-            ))}
-          </div>
-        ) : null}
+        <PublicListingGallery
+          photos={validPhotoUrls}
+          address={form.propertyAddress || "Listing photo"}
+        />
 
         <h1
           style={{

@@ -1,8 +1,40 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { createClient } from "@/hooks/supabase/client";
+import LogoutButton from "@/components/auth/LogoutButton";
 
 export default function PublicHeader() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    async function loadUser() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      setIsLoggedIn(!!user);
+      setIsCheckingAuth(false);
+    }
+
+    loadUser();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session?.user);
+      setIsCheckingAuth(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
   return (
     <header
       style={{
@@ -59,9 +91,18 @@ export default function PublicHeader() {
             Homes for Sale
           </Link>
 
-          <Link href="/login" style={ctaLinkStyle}>
-            Log In
-          </Link>
+          {isCheckingAuth ? null : isLoggedIn ? (
+            <>
+              <Link href="/dashboard" style={ctaLinkStyle}>
+                Dashboard
+              </Link>
+              <LogoutButton />
+            </>
+          ) : (
+            <Link href="/login" style={ctaLinkStyle}>
+              Log In
+            </Link>
+          )}
         </nav>
       </div>
     </header>

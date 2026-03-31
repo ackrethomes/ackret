@@ -65,6 +65,8 @@ export default function ListingCenterPage() {
 
   const [form, setForm] = useState<ListingCenterForm>(initialForm);
   const [uploadedPhotos, setUploadedPhotos] = useState<UploadedPhoto[]>([]);
+  const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const [showOrganizer, setShowOrganizer] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [saveMessage, setSaveMessage] = useState("Loading...");
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
@@ -178,6 +180,10 @@ export default function ListingCenterPage() {
           return next;
         });
 
+        if (uploadedPhotos.length === 0) {
+          setActivePhotoIndex(0);
+        }
+
         setSaveMessage("Saving...");
       }
     } finally {
@@ -186,14 +192,36 @@ export default function ListingCenterPage() {
     }
   }
 
-  function makeMainPhoto(index: number) {
+  function moveImageLeft(index: number) {
     if (index === 0) return;
 
     setUploadedPhotos((prev) => {
       const next = [...prev];
-      const [selected] = next.splice(index, 1);
-      next.unshift(selected);
+      [next[index - 1], next[index]] = [next[index], next[index - 1]];
       return next;
+    });
+
+    setActivePhotoIndex((prev) => {
+      if (prev === index) return index - 1;
+      if (prev === index - 1) return index;
+      return prev;
+    });
+
+    setSaveMessage("Saving...");
+  }
+
+  function moveImageRight(index: number) {
+    setUploadedPhotos((prev) => {
+      if (index >= prev.length - 1) return prev;
+      const next = [...prev];
+      [next[index], next[index + 1]] = [next[index + 1], next[index]];
+      return next;
+    });
+
+    setActivePhotoIndex((prev) => {
+      if (prev === index) return index + 1;
+      if (prev === index + 1) return index;
+      return prev;
     });
 
     setSaveMessage("Saving...");
@@ -201,6 +229,13 @@ export default function ListingCenterPage() {
 
   function removeImage(index: number) {
     setUploadedPhotos((prev) => prev.filter((_, i) => i !== index));
+
+    setActivePhotoIndex((prev) => {
+      if (index === prev) return 0;
+      if (index < prev) return prev - 1;
+      return prev;
+    });
+
     setSaveMessage("Saving...");
   }
 
@@ -244,6 +279,7 @@ export default function ListingCenterPage() {
       buildSignedPhotos(storedPaths)
         .then((photos) => {
           setUploadedPhotos(photos);
+          setActivePhotoIndex(0);
         })
         .catch((err) => {
           console.error("Unable to load stored listing photos.", err);
@@ -269,6 +305,12 @@ export default function ListingCenterPage() {
       };
     });
   }, [uploadedPhotos]);
+
+  useEffect(() => {
+    if (activePhotoIndex > uploadedPhotos.length - 1) {
+      setActivePhotoIndex(0);
+    }
+  }, [uploadedPhotos, activePhotoIndex]);
 
   useEffect(() => {
     if (!hasLoadedRef.current) return;
@@ -332,6 +374,7 @@ export default function ListingCenterPage() {
   );
 
   const completedDocs = documentLinks.filter((d) => d.url).length;
+  const activePhoto = uploadedPhotos[activePhotoIndex];
 
   if (loading) {
     return (
@@ -412,16 +455,16 @@ export default function ListingCenterPage() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                padding: uploadedPhotos[0] ? "0" : "24px",
+                padding: activePhoto ? "0" : "24px",
                 textAlign: "center",
                 overflow: "hidden",
                 position: "relative",
               }}
             >
-              {uploadedPhotos[0] ? (
+              {activePhoto ? (
                 <>
                   <img
-                    src={uploadedPhotos[0].previewUrl}
+                    src={activePhoto.previewUrl}
                     alt="Main listing preview"
                     style={{
                       width: "100%",
@@ -451,9 +494,17 @@ export default function ListingCenterPage() {
                     <button
                       type="button"
                       style={overlayButtonStyle}
-                      onClick={() => removeImage(0)}
+                      onClick={() => setShowOrganizer((prev) => !prev)}
                     >
-                      Remove Main
+                      {showOrganizer ? "Hide Organizer" : "See / Rearrange All Photos"}
+                    </button>
+
+                    <button
+                      type="button"
+                      style={overlayButtonStyle}
+                      onClick={() => removeImage(activePhotoIndex)}
+                    >
+                      Remove This Photo
                     </button>
                   </div>
                 </>
@@ -491,7 +542,7 @@ export default function ListingCenterPage() {
                     }}
                   >
                     Upload multiple photos, then click any thumbnail below to
-                    make it the main photo.
+                    enlarge it.
                   </p>
                 </div>
               )}
@@ -507,7 +558,27 @@ export default function ListingCenterPage() {
             </div>
 
             <div style={{ marginTop: "16px" }}>
-              <SectionLabel>Photo Strip</SectionLabel>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: "12px",
+                  marginBottom: "10px",
+                }}
+              >
+                <SectionLabel>Photo Strip</SectionLabel>
+
+                {uploadedPhotos.length > 0 ? (
+                  <button
+                    type="button"
+                    style={textButtonStyle}
+                    onClick={() => setShowOrganizer((prev) => !prev)}
+                  >
+                    {showOrganizer ? "Hide Organizer" : "See / Rearrange All Photos"}
+                  </button>
+                ) : null}
+              </div>
 
               {uploadedPhotos.length > 0 ? (
                 <div
@@ -522,7 +593,7 @@ export default function ListingCenterPage() {
                     <button
                       key={`${photo.path}-${index}`}
                       type="button"
-                      onClick={() => makeMainPhoto(index)}
+                      onClick={() => setActivePhotoIndex(index)}
                       style={{
                         flex: "0 0 auto",
                         width: "120px",
@@ -531,7 +602,7 @@ export default function ListingCenterPage() {
                         borderRadius: "16px",
                         overflow: "hidden",
                         border:
-                          index === 0
+                          index === activePhotoIndex
                             ? "3px solid var(--ackret-gold-dark)"
                             : "1px solid rgba(22,58,112,0.12)",
                         background: "#ffffff",
@@ -565,6 +636,124 @@ export default function ListingCenterPage() {
               )}
             </div>
 
+            {showOrganizer && uploadedPhotos.length > 0 ? (
+              <div style={{ marginTop: "18px" }}>
+                <SectionLabel>Photo Organizer</SectionLabel>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gap: "12px",
+                  }}
+                >
+                  {uploadedPhotos.map((photo, index) => (
+                    <div
+                      key={`${photo.path}-organizer-${index}`}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "88px 1fr auto",
+                        gap: "14px",
+                        alignItems: "center",
+                        border: "1px solid rgba(22,58,112,0.10)",
+                        borderRadius: "18px",
+                        padding: "12px",
+                        background:
+                          index === activePhotoIndex ? "#fffaf0" : "#fbfbf9",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: "88px",
+                          height: "66px",
+                          borderRadius: "12px",
+                          overflow: "hidden",
+                          background: "#eceae4",
+                          border: "1px solid rgba(22,58,112,0.08)",
+                        }}
+                      >
+                        <img
+                          src={photo.previewUrl}
+                          alt={photo.name}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <div
+                          style={{
+                            fontSize: "15px",
+                            color: "var(--ackret-navy)",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {photo.name}
+                        </div>
+
+                        <div
+                          style={{
+                            marginTop: "4px",
+                            fontSize: "13px",
+                            color: "var(--ackret-muted)",
+                          }}
+                        >
+                          {index === activePhotoIndex
+                            ? `Currently enlarged • Position ${index + 1}`
+                            : `Position ${index + 1}`}
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "8px",
+                          flexWrap: "wrap",
+                          justifyContent: "flex-end",
+                        }}
+                      >
+                        <button
+                          type="button"
+                          style={miniActionButtonStyle}
+                          onClick={() => setActivePhotoIndex(index)}
+                        >
+                          Enlarge
+                        </button>
+
+                        <button
+                          type="button"
+                          style={miniActionButtonStyle}
+                          onClick={() => moveImageLeft(index)}
+                          disabled={index === 0}
+                        >
+                          ←
+                        </button>
+
+                        <button
+                          type="button"
+                          style={miniActionButtonStyle}
+                          onClick={() => moveImageRight(index)}
+                          disabled={index === uploadedPhotos.length - 1}
+                        >
+                          →
+                        </button>
+
+                        <button
+                          type="button"
+                          style={miniDangerButtonStyle}
+                          onClick={() => removeImage(index)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             {uploadedPhotos.length > 0 ? (
               <div
                 style={{
@@ -573,8 +762,8 @@ export default function ListingCenterPage() {
                   color: "var(--ackret-muted)",
                 }}
               >
-                Click a thumbnail to make it the main photo. The current order
-                will save with this page.
+                Clicking a thumbnail only changes the enlarged photo. Use the
+                organizer to change the saved order.
               </div>
             ) : null}
 
@@ -1057,6 +1246,16 @@ const labelStyle: React.CSSProperties = {
   color: "var(--ackret-gold-dark)",
 };
 
+const textButtonStyle: React.CSSProperties = {
+  border: "none",
+  background: "transparent",
+  color: "var(--ackret-gold-dark)",
+  fontSize: "13px",
+  cursor: "pointer",
+  textDecoration: "underline",
+  padding: 0,
+};
+
 const standardInputStyle: React.CSSProperties = {
   width: "100%",
   padding: "14px 16px",
@@ -1132,6 +1331,26 @@ const overlayButtonStyle: React.CSSProperties = {
   fontSize: "12px",
   letterSpacing: "0.1em",
   textTransform: "uppercase",
+  cursor: "pointer",
+};
+
+const miniActionButtonStyle: React.CSSProperties = {
+  borderRadius: "999px",
+  border: "1px solid rgba(22,58,112,0.12)",
+  background: "#ffffff",
+  color: "var(--ackret-navy)",
+  fontSize: "12px",
+  padding: "8px 12px",
+  cursor: "pointer",
+};
+
+const miniDangerButtonStyle: React.CSSProperties = {
+  borderRadius: "999px",
+  border: "1px solid rgba(180,35,24,0.18)",
+  background: "#ffffff",
+  color: "#b42318",
+  fontSize: "12px",
+  padding: "8px 12px",
   cursor: "pointer",
 };
 

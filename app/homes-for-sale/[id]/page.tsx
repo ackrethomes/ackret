@@ -1,6 +1,11 @@
 import Link from "next/link";
 import PublicHeader from "@/components/site/PublicHeader";
-import { createClient } from "@/lib/supabase/server";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
+
+const supabase = createAdminClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export default async function ListingDetailPage({
   params,
@@ -11,7 +16,6 @@ export default async function ListingDetailPage({
 }) {
   const { id } = await params;
   const { photo } = await searchParams;
-  const supabase = await createClient();
 
   const { data: profile, error } = await supabase
     .from("seller_profiles")
@@ -85,7 +89,7 @@ export default async function ListingDetailPage({
         .createSignedUrl(path, 60 * 60);
 
       if (signedError || !data?.signedUrl) {
-        console.error("Signed URL error:", signedError);
+        console.error("Signed URL error for path:", path, signedError);
         return null;
       }
 
@@ -184,10 +188,6 @@ export default async function ListingDetailPage({
                     index === activePhotoIndex
                       ? "3px solid var(--ackret-gold-dark)"
                       : "1px solid rgba(22,58,112,0.12)",
-                  boxShadow:
-                    index === activePhotoIndex
-                      ? "0 0 0 1px rgba(22,58,112,0.04)"
-                      : "none",
                 }}
               >
                 <img
